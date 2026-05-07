@@ -35,15 +35,15 @@ export class OrderRepo {
       const result = db.prepare(`
         INSERT INTO orders (client_order_id, order_num, subtotal, disc_amount, disc_reason, disc_type, disc_value,
           total, pay_mode, bank_name, bank_ref, cash_in, cash_change, cash_part, bank_part,
-          customer_id, employee_id, shift_id, order_type, order_note, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))
+          customer_id, employee_id, shift_id, order_type, order_note, table_num, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))
       `).run(
         data.clientOrderId || null, orderNum, data.subtotal, data.discAmount || 0,
         data.discReason || null, data.discType || null, data.discValue || null,
         data.total, data.payMode, data.bankName || null, data.bankRef || null,
         data.cashIn || null, data.cashChange || null, data.cashPart || null, data.bankPart || null,
         data.customerId || null, data.employeeId || null, data.shiftId || null,
-        data.orderType || null, data.orderNote || null
+        data.orderType || null, data.orderNote || null, data.tableNum || null
       )
       const orderId = result.lastInsertRowid as number
 
@@ -116,6 +116,24 @@ export class OrderRepo {
           UPDATE customers SET points = points + ?, total_spend = total_spend + ?, visit_count = visit_count + 1
           WHERE id = ?
         `).run(newPoints, data.total, data.customerId)
+
+        // Check for auto VIP upgrade
+        const autoVipSett = db.prepare(`SELECT value FROM settings WHERE key = 'auto_vip_threshold'`).get() as any
+        if (autoVipSett && autoVipSett.value) {
+          const threshold = parseInt(autoVipSett.value)
+          if (!isNaN(threshold) && threshold > 0) {
+            // Check current total_spend
+            const cust = db.prepare(`SELECT total_spend, is_vip FROM customers WHERE id = ?`).get(data.customerId) as any
+            if (cust && !cust.is_vip && cust.total_spend >= threshold) {
+              db.prepare(`UPDATE customers SET is_vip = 1 WHERE id = ?`).run(data.customerId)
+              // Log the auto upgrade
+              db.prepare(`INSERT INTO action_log (employee_id, action, detail) VALUES (?, 'AUTO_VIP_UPGRADE', ?)`).run(
+                data.employeeId || null,
+                JSON.stringify({ customerId: data.customerId, totalSpend: cust.total_spend, threshold })
+              )
+            }
+          }
+        }
       }
 
       // 8. Action log

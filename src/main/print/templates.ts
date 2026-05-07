@@ -30,6 +30,7 @@ export interface ReceiptData {
   bankAmount?: number
   customerName?: string
   createdAt: string
+  tableNum?: string
 }
 
 export function cashierReceipt(data: ReceiptData, header: string, footer: string): string {
@@ -38,6 +39,7 @@ export function cashierReceipt(data: ReceiptData, header: string, footer: string
   lines.push(SEP)
   lines.push(pad(`طلب #${data.orderNum}`, data.createdAt?.slice(11, 16) || ''))
   lines.push(data.createdAt?.slice(0, 10) || '')
+  if (data.tableNum) lines.push(center(`[ طاولة: ${data.tableNum} ]`))
   if (data.customerName) lines.push(`العميل: ${data.customerName}`)
   lines.push(SEP)
 
@@ -77,6 +79,7 @@ export interface KitchenTicketData {
   orderNum: number
   items: { name: string; qty: number; variationLabel?: string; modifiers?: string[]; notes?: string }[]
   createdAt: string
+  tableNum?: string
 }
 
 export function kitchenTicket(data: KitchenTicketData): string {
@@ -84,6 +87,7 @@ export function kitchenTicket(data: KitchenTicketData): string {
   lines.push(center('** تذكرة مطبخ **'))
   lines.push(SEP)
   lines.push(pad(`طلب #${data.orderNum}`, data.createdAt?.slice(11, 16) || ''))
+  if (data.tableNum) lines.push(center(`[ طاولة: ${data.tableNum} ]`))
   lines.push(SEP)
 
   for (const item of data.items) {

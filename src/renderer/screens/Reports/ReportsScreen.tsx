@@ -51,6 +51,9 @@ export function ReportsScreen() {
         { id: 'sales', label: 'المبيعات' },
         { id: 'pnl', label: 'الأرباح والخسائر' },
         { id: 'items', label: 'الأصناف' },
+        { id: 'inventory', label: 'المخزون والمشتريات' },
+        { id: 'employees', label: 'أداء الموظفين' },
+        { id: 'customers', label: 'العملاء والولاء' },
         { id: 'pays', label: 'طرق الدفع' },
         { id: 'audit', label: 'سجل العمليات' }
       ]} active={tab} onChange={setTab} />
@@ -58,6 +61,9 @@ export function ReportsScreen() {
       {tab === 'sales' && <SalesReport filters={filters} />}
       {tab === 'pnl' && <PnLReport filters={filters} />}
       {tab === 'items' && <ItemsReport filters={filters} />}
+      {tab === 'inventory' && <InventoryReport filters={filters} />}
+      {tab === 'employees' && <EmployeeReport filters={filters} />}
+      {tab === 'customers' && <CustomerReport filters={filters} />}
       {tab === 'pays' && <PaymentsReport filters={filters} />}
       {tab === 'audit' && <AuditLog filters={filters} />}
     </div>
@@ -82,89 +88,185 @@ async function exportPDF(reportType: string, filters: any) {
 function SalesReport({ filters }: any) {
   const [summary, setSummary] = useState<any>(null)
   const [orders, setOrders] = useState<any[]>([])
-  const [heatmap, setHeatmap] = useState<number[]>(new Array(24).fill(0))
-  const ordersPaged = usePaginated(orders, 10)
+  const [chartData, setChartData] = useState<{labels: string[], values: number[], title: string}>({ labels: [], values: [], title: 'خريطة المبيعات' })
+  const ordersPaged = usePaginated(orders, 50)
 
   useEffect(() => {
     api?.orders?.salesSummary?.(filters).then((d: any) => d && setSummary(d))
     api?.orders?.list?.({ ...filters, status: 'confirmed' }).then((d: any) => {
       if (!d) return
       setOrders(d)
-      // Build real hourly heatmap from orders
-      const hours = new Array(24).fill(0)
-      d.forEach((o: any) => {
-        if (o.created_at) {
-          const h = new Date(o.created_at).getHours()
-          hours[h] += o.total || 0
-        }
-      })
-      setHeatmap(hours)
+      if (!d || d.length === 0) {
+        setChartData({ labels: [], values: [], title: 'خريطة المبيعات بالساعة' })
+        return
+      }
+
+      // Determine date span dynamically
+      const minDate = new Date(Math.min(...d.map((o: any) => new Date(o.created_at).getTime())))
+      const maxDate = new Date(Math.max(...d.map((o: any) => new Date(o.created_at).getTime())))
+      const spanDays = (maxDate.getTime() - minDate.getTime()) / (1000 * 3600 * 24)
+
+      if (spanDays <= 1) {
+        const hours = new Array(24).fill(0)
+        d.forEach((o: any) => {
+          if (o.created_at) {
+            let h = parseInt(o.created_at.slice(11, 13), 10)
+            if (isNaN(h)) h = new Date(o.created_at).getHours()
+            if (!isNaN(h) && h >= 0 && h < 24) hours[h] += o.total || 0
+          }
+        })
+        const labels = Array.from({ length: 24 }, (_, i) => i === 0 ? '12ص' : i < 12 ? `${i}ص` : i === 12 ? '12م' : `${i - 12}م`)
+        setChartData({ labels, values: hours, title: 'المبيعات بالساعة (اليوم)' })
+      } else if (spanDays <= 31) {
+        const daysMap: Record<string, number> = {}
+        d.forEach((o: any) => {
+          if (!o.created_at) return
+          const date = o.created_at.slice(5, 10) // MM-DD
+          daysMap[date] = (daysMap[date] || 0) + (o.total || 0)
+        })
+        const labels = Object.keys(daysMap).sort()
+        const values = labels.map(l => daysMap[l])
+        setChartData({ labels, values, title: 'المبيعات اليومية' })
+      } else {
+        const monthsMap: Record<string, number> = {}
+        d.forEach((o: any) => {
+          if (!o.created_at) return
+          const month = o.created_at.slice(0, 7) // YYYY-MM
+          monthsMap[month] = (monthsMap[month] || 0) + (o.total || 0)
+        })
+        const labels = Object.keys(monthsMap).sort()
+        const values = labels.map(l => monthsMap[l])
+        setChartData({ labels, values, title: 'المبيعات الشهرية' })
+      }
     })
   }, [filters.startDate, filters.endDate])
 
-  const maxH = Math.max(...heatmap, 1)
-  const HOURS = Array.from({ length: 24 }, (_, i) => {
-    if (i === 0) return '12ص'
-    if (i < 12) return `${i}ص`
-    if (i === 12) return '12م'
-    return `${i - 12}م`
-  })
+  const maxH = Math.max(...chartData.values, 1)
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
       {summary && (
-        <KpiGrid min={180}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
           {[
             { l: 'إجمالي الإيرادات', v: `${summary.totalRevenue?.toLocaleString()} ج.س`, c: P.purple },
             { l: 'تكلفة البضاعة', v: `${(summary.totalCost || 0).toLocaleString()} ج.س`, c: P.rose },
             { l: 'الربح الإجمالي', v: `${(summary.grossProfit || 0).toLocaleString()} ج.س`, c: P.green },
             { l: 'إجمالي الطلبات', v: summary.totalOrders?.toLocaleString(), c: '#4f46e5' },
-            { l: 'متوسط الطلب', v: `${summary.avgOrder?.toLocaleString()} ج.س`, c: P.pink },
-            { l: 'إجمالي الخصومات', v: `${summary.totalDiscount?.toLocaleString()} ج.س`, c: P.gold }
-          ].map(k => (
-            <Card key={k.l} style={{ padding: 16 }}>
-              <div style={{ fontSize: 13, color: P.muted, fontWeight: 700, marginBottom: 4 }}>{k.l}</div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: k.c }}>{k.v}</div>
-            </Card>
-          ))}
-        </KpiGrid>
-      )}
-
-      {summary && (
-        <KpiGrid min={180}>
-          {[
-            { l: 'مبيعات نقدية', v: `${summary.cashSum?.toLocaleString()} ج.س`, c: P.green, sub: `${summary.cashCount} طلب` },
-            { l: 'مبيعات بنكية', v: `${summary.bankSum?.toLocaleString()} ج.س`, c: P.blue, sub: `${summary.bankCount} طلب` },
-            { l: 'دفع مقسم', v: `${summary.splitSum?.toLocaleString()} ج.س`, c: P.gold, sub: `${summary.splitCount} طلب` }
           ].map(k => (
             <Card key={k.l} style={{ padding: 14 }}>
-              <div style={{ fontSize: 12, color: P.muted, fontWeight: 700, marginBottom: 2 }}>{k.l}</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: k.c }}>{k.v}</div>
-              <div style={{ fontSize: 12, color: P.faint, marginTop: 2 }}>{k.sub}</div>
+              <div style={{ fontSize: 13, color: P.muted, fontWeight: 700, marginBottom: 4 }}>{k.l}</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: k.c }}>{k.v}</div>
             </Card>
           ))}
-        </KpiGrid>
+        </div>
       )}
 
-      <Card style={{ padding: 16, overflow: 'hidden' }}>
-        <div style={{ fontSize: 14, color: P.muted, fontWeight: 700, marginBottom: 16 }}>خريطة المبيعات بالساعة</div>
-        <div style={{ overflowX: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 120, minWidth: 500 }}>
-          {HOURS.map((h, i) => (
-            <div key={h} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <div style={{ width: '100%', borderRadius: '4px 4px 0 0', minHeight: 2, height: `${Math.round(100 * heatmap[i] / maxH)}%`, background: `rgba(147,51,234,${0.15 + 0.85 * heatmap[i] / maxH})`, transition: 'height .5s' }} />
-              <div style={{ fontSize: 9, color: P.faint, fontWeight: 600 }}>{h}</div>
-            </div>
-          ))}
-          </div>
-        </div>
-      </Card>
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        <Card style={{ flex: 2, minWidth: 400, padding: '16px 20px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ fontSize: 15, color: P.plum, fontWeight: 800, marginBottom: 12 }}>{chartData.title}</div>
+          <div style={{ overflowX: 'auto', flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 220 }}>
+            {(() => {
+              const average = chartData.values.length > 0 ? chartData.values.reduce((a,b)=>a+b,0) / chartData.values.length : 0;
+              const avgPercent = maxH > 0 ? (average / maxH) * 100 : 0;
+              
+              return (
+                <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'flex-end', paddingTop: 45, paddingBottom: 24 }}>
+                  {/* Y-Axis Labels */}
+                  <div style={{ position: 'absolute', left: 0, top: 45, bottom: 24, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: 10, color: P.faint, fontWeight: 700, pointerEvents: 'none' }}>
+                    <span>{maxH.toLocaleString()}</span>
+                    <span>{Math.round(maxH/2).toLocaleString()}</span>
+                    <span>0</span>
+                  </div>
+                  
+                  {/* Horizontal Grid Lines */}
+                  <div style={{ position: 'absolute', left: 40, right: 0, top: 45, height: 1, background: P.ghost, zIndex: 0 }} />
+                  <div style={{ position: 'absolute', left: 40, right: 0, top: 'calc(50% + 10px)', height: 1, background: P.ghost, zIndex: 0 }} />
+                  
+                  {/* Average Line */}
+                  {average > 0 && (
+                    <div style={{ position: 'absolute', left: 40, right: 0, bottom: `calc(${avgPercent}% + 24px)`, borderTop: `1.5px dashed ${P.gold}`, zIndex: 1, pointerEvents: 'none', opacity: 0.8 }}>
+                      <span style={{ position: 'absolute', right: 0, top: -18, fontSize: 10, color: P.gold, fontWeight: 800, background: P.surface, padding: '0 4px', borderRadius: 4 }}>متوسط: {Math.round(average).toLocaleString()}</span>
+                    </div>
+                  )}
 
-      <Card style={{ padding: 0, overflow: 'hidden' }}>
+                  {/* Bars */}
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: chartData.labels.length > 15 ? 3 : 8, height: '100%', marginLeft: 45, zIndex: 2 }}>
+                    {chartData.labels.map((lbl, i) => {
+                      const val = chartData.values[i];
+                      const hPercent = maxH > 0 ? (val / maxH) * 100 : 0;
+                      return (
+                        <div 
+                          key={i} 
+                          style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end', position: 'relative' }}
+                        >
+                          {/* Hover Tooltip */}
+                          <div style={{ position: 'absolute', bottom: `calc(${Math.max(hPercent, 1)}% + 10px)`, left: '50%', opacity: 0, background: P.plum, color: '#fff', padding: '4px 8px', borderRadius: 8, fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap', pointerEvents: 'none', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', transform: 'translate(-50%, 10px)', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', zIndex: 10 }}>
+                            {val.toLocaleString()} ج.س
+                            <div style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', borderWidth: '4px 4px 0', borderStyle: 'solid', borderColor: `${P.plum} transparent transparent transparent` }} />
+                          </div>
+
+                          <div style={{ 
+                            width: '100%', 
+                            height: `${Math.max(hPercent, 1)}%`, 
+                            background: `linear-gradient(to top, ${P.purple}, ${P.pink})`, 
+                            borderRadius: '6px 6px 0 0', 
+                            transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                            boxShadow: val > 0 ? `0 0 12px rgba(219, 39, 119, ${0.1 + 0.4 * hPercent/100})` : 'none',
+                            opacity: val === 0 ? 0.05 : 0.9,
+                            cursor: 'pointer'
+                          }} 
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.opacity = '1';
+                            e.currentTarget.style.filter = 'brightness(1.2) contrast(1.1)';
+                            const tooltip = e.currentTarget.previousElementSibling as HTMLElement;
+                            if (tooltip) {
+                              tooltip.style.opacity = '1';
+                              tooltip.style.transform = 'translate(-50%, 0)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.opacity = val === 0 ? '0.05' : '0.9';
+                            e.currentTarget.style.filter = 'none';
+                            const tooltip = e.currentTarget.previousElementSibling as HTMLElement;
+                            if (tooltip) {
+                              tooltip.style.opacity = '0';
+                              tooltip.style.transform = 'translate(-50%, 10px)';
+                            }
+                          }}
+                          />
+                          <div style={{ position: 'absolute', bottom: -24, fontSize: Math.max(9, Math.min(11, 400/chartData.labels.length)), color: P.muted, fontWeight: 700, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', width: '100%', textAlign: 'center' }}>{lbl}</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+        </Card>
+
+        {summary && (
+          <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {[
+              { l: 'مبيعات نقدية', v: `${summary.cashSum?.toLocaleString()} ج.س`, c: P.green, sub: `${summary.cashCount} طلب` },
+              { l: 'مبيعات بنكية', v: `${summary.bankSum?.toLocaleString()} ج.س`, c: P.blue, sub: `${summary.bankCount} طلب` },
+              { l: 'دفع مقسم', v: `${summary.splitSum?.toLocaleString()} ج.س`, c: P.gold, sub: `${summary.splitCount} طلب` }
+            ].map(k => (
+              <Card key={k.l} style={{ padding: 12, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ fontSize: 12, color: P.muted, fontWeight: 700, marginBottom: 2 }}>{k.l}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: k.c }}>{k.v} <span style={{ fontSize: 11, color: P.faint, fontWeight: 600, marginRight: 6 }}>({k.sub})</span></div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Card style={{ padding: 0, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 300, overflow: 'hidden' }}>
         <div style={{ padding: '14px 16px', background: P.bg2, borderBottom: `1.5px solid ${P.border}`, fontSize: 14, fontWeight: 700, color: P.plum }}>تفاصيل الطلبات</div>
-        <ResponsiveTable minWidth={680}>
-          <table style={{ width: '100%', minWidth: 680, borderCollapse: 'collapse', fontSize: 14 }}>
-            <thead><tr style={{ background: P.bg2, borderBottom: `1.5px solid ${P.border}` }}>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <ResponsiveTable minWidth={680}>
+            <table style={{ width: '100%', minWidth: 680, borderCollapse: 'collapse', fontSize: 14 }}>
+              <thead><tr style={{ background: P.bg2, borderBottom: `1.5px solid ${P.border}`, position: 'sticky', top: 0, zIndex: 10 }}>
               {['رقم الطلب', 'الإجمالي', 'طريقة الدفع', 'الأصناف', 'التاريخ'].map(h => <th key={h} style={{ padding: '10px 14px', fontSize: 13, color: P.muted, fontWeight: 700, textAlign: 'right' }}>{h}</th>)}
             </tr></thead>
             <tbody>
@@ -183,6 +285,7 @@ function SalesReport({ filters }: any) {
           </table>
         </ResponsiveTable>
         {orders.length === 0 && <div style={{ padding: 40, textAlign: 'center', color: P.faint, fontSize: 15 }}>لا توجد طلبات في هذه الفترة</div>}
+        </div>
       </Card>
       <Pagination
         page={ordersPaged.page}
@@ -283,18 +386,22 @@ function ItemsReport({ filters }: any) {
 function PnLReport({ filters }: any) {
   const [sales, setSales] = useState<any>(null)
   const [expenses, setExpenses] = useState<any>(null)
+  const [invStats, setInvStats] = useState<any>(null)
 
   useEffect(() => {
     api?.orders?.salesSummary?.(filters).then((d: any) => d && setSales(d))
     api?.cash?.expensesSummary?.(filters).then((d: any) => d && setExpenses(d))
+    api?.reports?.inventoryStats?.(filters).then((d: any) => d && setInvStats(d))
   }, [filters.startDate, filters.endDate])
 
-  if (!sales || !expenses) return <div style={{ padding: 40, textAlign: 'center', color: P.faint }}>جاري التحميل…</div>
+  if (!sales || !expenses || !invStats) return <div style={{ padding: 40, textAlign: 'center', color: P.faint }}>جاري التحميل…</div>
 
   const revenue = sales.totalRevenue || 0
   const cogs = sales.totalCost || 0
   const grossProfit = revenue - cogs
-  const totalExpenses = expenses.totalExpenses || 0
+  const standardExpenses = expenses.totalExpenses || 0
+  const damageCost = invStats.totalDamageCost || 0
+  const totalExpenses = standardExpenses + damageCost
   const netProfit = grossProfit - totalExpenses
   const grossMargin = revenue > 0 ? Math.round(grossProfit / revenue * 100) : 0
   const netMargin = revenue > 0 ? Math.round(netProfit / revenue * 100) : 0
@@ -327,7 +434,8 @@ function PnLReport({ filters }: any) {
         {[{ l: 'الإيرادات', v: revenue, c: P.purple },
           { l: '(−) تكلفة البضاعة', v: cogs, c: P.rose },
           { l: '= الربح الإجمالي', v: grossProfit, c: grossProfit > 0 ? P.green : P.rose, bold: true },
-          { l: '(−) المصروفات', v: totalExpenses, c: '#e67e22' },
+          { l: '(−) المصروفات النثرية', v: standardExpenses, c: '#e67e22' },
+          { l: '(−) تكلفة الهوالك والتوالف', v: damageCost, c: P.rose },
           { l: '= صافي الربح', v: netProfit, c: netProfit > 0 ? P.green : P.rose, bold: true },
         ].map((row, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderBottom: (row as any).bold ? `2px solid ${P.border}` : `1px solid ${P.ghost}`, background: (row as any).bold ? P.bg2 : 'transparent' }}>
@@ -505,6 +613,139 @@ function AuditLog({ filters }: any) {
         endIndex={logsPaged.endIndex}
         onChange={logsPaged.setPage}
       />
+    </div>
+  )
+}
+
+function InventoryReport({ filters }: any) {
+  const [stats, setStats] = useState<any>(null)
+  useEffect(() => {
+    api?.reports?.inventoryStats?.(filters).then((d: any) => d && setStats(d))
+  }, [filters.startDate, filters.endDate])
+
+  if (!stats) return <div style={{ padding: 40, textAlign: 'center', color: P.faint }}>جاري التحميل…</div>
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <KpiGrid min={220}>
+        <Card style={{ padding: 18, background: P.purpleXL, border: `1px solid ${P.ghost}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 20 }}>📦</span>
+            <span style={{ fontSize: 13, color: P.purple, fontWeight: 800 }}>قيمة المخزون الحالي</span>
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: P.purple }}>{stats.currentValuation?.toLocaleString()} <span style={{ fontSize: 13, fontWeight: 600 }}>ج.س</span></div>
+          <div style={{ fontSize: 12, color: P.purple, marginTop: 4 }}>رأس المال المجمد في المخزون</div>
+        </Card>
+        
+        <Card style={{ padding: 18, background: P.blueXL, border: `1px solid ${P.ghost}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 20 }}>🚚</span>
+            <span style={{ fontSize: 13, color: P.blue, fontWeight: 800 }}>المشتريات في هذه الفترة</span>
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: P.blue }}>{stats.totalSpent?.toLocaleString()} <span style={{ fontSize: 13, fontWeight: 600 }}>ج.س</span></div>
+        </Card>
+
+        <Card style={{ padding: 18, background: P.roseXL, border: `1px solid ${P.ghost}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 20 }}>🗑️</span>
+            <span style={{ fontSize: 13, color: P.rose, fontWeight: 800 }}>تكلفة التوالف والهدر</span>
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: P.rose }}>{stats.totalDamageCost?.toLocaleString()} <span style={{ fontSize: 13, fontWeight: 600 }}>ج.س</span></div>
+          <div style={{ fontSize: 12, color: P.rose, marginTop: 4 }}>خسائر المواد التالفة</div>
+        </Card>
+      </KpiGrid>
+    </div>
+  )
+}
+
+function EmployeeReport({ filters }: any) {
+  const [stats, setStats] = useState<any[]>([])
+  useEffect(() => {
+    api?.reports?.employeeStats?.(filters).then((d: any) => d && setStats(d))
+  }, [filters.startDate, filters.endDate])
+
+  if (stats.length === 0) return <div style={{ padding: 40, textAlign: 'center', color: P.faint }}>جاري التحميل أو لا توجد بيانات...</div>
+
+  const maxSales = Math.max(...stats.map(s => s.total_sales || 0), 1)
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <Card style={{ padding: 18 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: P.plum, marginBottom: 16 }}>👨‍💼 أداء الموظفين والمبيعات</div>
+        <ResponsiveTable minWidth={700}>
+        <table style={{ width: '100%', minWidth: 700, borderCollapse: 'collapse' }}>
+          <thead><tr style={{ borderBottom: `1.5px solid ${P.border}` }}>
+            {['الموظف', 'عدد الطلبات', 'إجمالي المبيعات', 'الخصومات', 'الإلغاءات', 'مؤشر المبيعات'].map(h => <th key={h} style={{ padding: '8px 12px', fontSize: 13, color: P.muted, fontWeight: 700, textAlign: 'right' }}>{h}</th>)}
+          </tr></thead>
+          <tbody>
+            {stats.map((emp, i) => (
+              <tr key={i} style={{ borderBottom: `1px solid ${P.ghost}` }}>
+                <td style={{ padding: '11px 12px', fontSize: 15, fontWeight: 800, color: P.plum }}>{emp.name} <span style={{fontSize: 11, color: P.faint, fontWeight: 600}}>({emp.role})</span></td>
+                <td style={{ padding: '11px 12px', fontSize: 14, fontWeight: 700, color: P.ink }}>{emp.order_count} طلب</td>
+                <td style={{ padding: '11px 12px', fontSize: 15, fontWeight: 900, color: P.purple }}>{(emp.total_sales || 0).toLocaleString()} ج.س</td>
+                <td style={{ padding: '11px 12px', fontSize: 14, color: emp.total_discounts > 0 ? P.gold : P.muted }}>{(emp.total_discounts || 0).toLocaleString()} ج.س</td>
+                <td style={{ padding: '11px 12px', fontSize: 14, color: emp.void_count > 0 ? P.rose : P.muted, fontWeight: emp.void_count > 0 ? 800 : 500 }}>{emp.void_count} عمليات</td>
+                <td style={{ padding: '11px 12px', width: 150 }}>
+                  <div style={{ height: 6, borderRadius: 99, background: P.bg2 }}>
+                    <div style={{ height: '100%', borderRadius: 99, background: P.purple, width: `${Math.round((emp.total_sales || 0) / maxSales * 100)}%` }} />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        </ResponsiveTable>
+      </Card>
+    </div>
+  )
+}
+
+function CustomerReport({ filters }: any) {
+  const [stats, setStats] = useState<any>(null)
+  useEffect(() => {
+    api?.reports?.customerStats?.(filters).then((d: any) => d && setStats(d))
+  }, [filters.startDate, filters.endDate])
+
+  if (!stats) return <div style={{ padding: 40, textAlign: 'center', color: P.faint }}>جاري التحميل…</div>
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <KpiGrid min={220}>
+        <Card style={{ padding: 18, background: P.blueXL, border: `1px solid ${P.ghost}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 20 }}>👥</span>
+            <span style={{ fontSize: 13, color: P.blue, fontWeight: 800 }}>إجمالي العملاء المسجلين</span>
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: P.blue }}>{stats.totalCustomers?.toLocaleString()}</div>
+        </Card>
+        
+        <Card style={{ padding: 18, background: P.goldXL, border: `1px solid ${P.ghost}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 20 }}>⭐</span>
+            <span style={{ fontSize: 13, color: P.gold, fontWeight: 800 }}>عملاء VIP المميزين</span>
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: P.gold }}>{stats.totalVip?.toLocaleString()}</div>
+          <div style={{ fontSize: 12, color: P.gold, marginTop: 4 }}>ترقيات في هذه الفترة: {stats.vipUpgrades}</div>
+        </Card>
+
+        <Card style={{ padding: 18, background: P.purpleXL, border: `1px solid ${P.ghost}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 20 }}>🎁</span>
+            <span style={{ fontSize: 13, color: P.purple, fontWeight: 800 }}>إجمالي النقاط المتوفرة</span>
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: P.purple }}>{stats.totalPointsLiability?.toLocaleString()}</div>
+          <div style={{ fontSize: 12, color: P.purple, marginTop: 4 }}>إجمالي التزام الخصم للعملاء</div>
+        </Card>
+
+        <Card style={{ padding: 18, background: P.greenXL, border: `1px solid ${P.ghost}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 20 }}>💸</span>
+            <span style={{ fontSize: 13, color: P.green, fontWeight: 800 }}>نقاط تم استبدالها (هذه الفترة)</span>
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: P.green }}>{stats.pointsRedeemedValue?.toLocaleString()} <span style={{ fontSize: 13, fontWeight: 600 }}>ج.س</span></div>
+          <div style={{ fontSize: 12, color: P.green, marginTop: 4 }}>خصومات منحت بسبب الولاء</div>
+        </Card>
+      </KpiGrid>
     </div>
   )
 }

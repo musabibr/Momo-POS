@@ -76,9 +76,46 @@ export class CustomerRepo {
   }
 
   static getOrderHistory(customerId: number, limit = 10) {
-    return getDb().prepare(`
+    const db = getDb()
+    const orders = db.prepare(`
       SELECT id, order_num, total, pay_mode, created_at FROM orders
       WHERE customer_id = ? ORDER BY created_at DESC LIMIT ?
+    `).all(customerId, limit) as any[]
+
+    if (orders.length > 0) {
+      const orderIds = orders.map(o => o.id)
+      const placeholders = orderIds.map(() => '?').join(',')
+      const items = db.prepare(`
+        SELECT oi.id, oi.order_id, oi.qty, oi.unit_price, oi.variation_label, oi.selections, i.name as item_name
+        FROM order_items oi
+        JOIN items i ON i.id = oi.item_id
+        WHERE oi.order_id IN (${placeholders})
+      `).all(...orderIds) as any[]
+
+      const itemsByOrder: Record<number, any[]> = {}
+      for (const item of items) {
+        if (!itemsByOrder[item.order_id]) itemsByOrder[item.order_id] = []
+        itemsByOrder[item.order_id].push(item)
+      }
+
+      for (const o of orders) {
+        o.items = itemsByOrder[o.id] || []
+      }
+    }
+    return orders
+  }
+
+  static getTopItems(customerId: number, limit = 5) {
+    const db = getDb()
+    return db.prepare(`
+      SELECT i.name as item_name, SUM(oi.qty) as total_qty, SUM(oi.unit_price * oi.qty) as total_revenue
+      FROM order_items oi
+      JOIN orders o ON o.id = oi.order_id
+      JOIN items i ON i.id = oi.item_id
+      WHERE o.customer_id = ? AND o.status = 'confirmed'
+      GROUP BY oi.item_id
+      ORDER BY total_qty DESC
+      LIMIT ?
     `).all(customerId, limit)
   }
 }

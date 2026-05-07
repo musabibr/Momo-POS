@@ -138,7 +138,8 @@ const api = {
     update: (id: number, data: any) => invoke('customers:update', id, data),
     addPoints: (id: number, orderId: number, amount: number) => invoke('customers:addPoints', id, orderId, amount),
     redeemPoints: (id: number, points: number) => invoke('customers:redeemPoints', id, points),
-    getOrderHistory: (customerId: number, limit?: number) => invoke('customers:getOrderHistory', customerId, limit)
+    getOrderHistory: (customerId: number, limit?: number) => invoke('customers:getOrderHistory', customerId, limit),
+    getTopItems: (customerId: number, limit?: number) => invoke('customers:getTopItems', customerId, limit)
   },
 
   // ── EMPLOYEES ───────────────────────────────────────────────────
@@ -196,6 +197,9 @@ const api = {
     hourlySales: (filters?: any) => invoke('reports:hourlySales', filters),
     itemRanking: (filters?: any) => invoke('reports:itemRanking', filters),
     paymentBreakdown: (filters?: any) => invoke('reports:paymentBreakdown', filters),
+    inventoryStats: (filters?: any) => invoke('reports:inventoryStats', filters),
+    employeeStats: (filters?: any) => invoke('reports:employeeStats', filters),
+    customerStats: (filters?: any) => invoke('reports:customerStats', filters),
     exportPDF: (reportType: string, filters?: any) => invoke('reports:exportPDF', reportType, filters)
   },
 

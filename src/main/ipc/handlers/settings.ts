@@ -9,6 +9,9 @@ export function registerReportHandlers() {
   handle('reports:hourlySales', (filters) => ReportRepo.hourlySales(filters), ['admin', 'manager'])
   handle('reports:itemRanking', (filters) => ReportRepo.itemRanking(filters), ['admin', 'manager'])
   handle('reports:paymentBreakdown', (filters) => ReportRepo.paymentBreakdown(filters), ['admin', 'manager'])
+  handle('reports:inventoryStats', (filters) => ReportRepo.inventoryStats(filters), ['admin', 'manager'])
+  handle('reports:employeeStats', (filters) => ReportRepo.employeeStats(filters), ['admin', 'manager'])
+  handle('reports:customerStats', (filters) => ReportRepo.customerStats(filters), ['admin', 'manager'])
 }
 
 export function registerSettingsHandlers() {

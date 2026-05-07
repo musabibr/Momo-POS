@@ -287,12 +287,12 @@ function PrintTab() {
 }
 
 function LoyaltyTab() {
-  const [sett, setSett] = useState({ loyalty: '1000', maxDisc: '100' })
+  const [sett, setSett] = useState({ loyalty: '1000', maxDisc: '100', autoVip: '' })
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     api?.settings?.getAll?.().then((s: any) => {
-      if (s) setSett({ loyalty: s.loyalty_rate || '1000', maxDisc: s.loyalty_redemption_value || '100' })
+      if (s) setSett({ loyalty: s.loyalty_rate || '1000', maxDisc: s.loyalty_redemption_value || '100', autoVip: s.auto_vip_threshold || '' })
     })
   }, [])
 
@@ -301,6 +301,7 @@ function LoyaltyTab() {
   async function save() {
     await api?.settings?.set?.('loyalty_rate', sett.loyalty)
     await api?.settings?.set?.('loyalty_redemption_value', sett.maxDisc)
+    await api?.settings?.set?.('auto_vip_threshold', sett.autoVip)
     setSaved(true)
     toast('تم حفظ إعدادات الولاء ✓')
     setTimeout(() => setSaved(false), 2200)
@@ -313,6 +314,11 @@ function LoyaltyTab() {
         <div style={{ fontSize: 13, color: P.muted, marginTop: -8, marginBottom: 16 }}>مثال: 1000 = نقطة واحدة مقابل كل 1000 ج.س إنفاق</div>
         <Field label="قيمة استرداد النقاط (قرش لكل نقطة)"><Inp type="number" value={sett.maxDisc} onChange={(e: any) => upd('maxDisc', e.target.value)} /></Field>
         <div style={{ fontSize: 13, color: P.muted, marginTop: -8, marginBottom: 12 }}>مثال: 100 = كل نقطة تخصم 100 قرش (1 ج.س)</div>
+      </Card>
+      <Card style={{ padding: 18 }}>
+        <div style={{ fontWeight: 800, fontSize: 15, color: P.gold, marginBottom: 4 }}>الترقية التلقائية لـ VIP</div>
+        <div style={{ fontSize: 13, color: P.muted, marginBottom: 12 }}>سيتم ترقية العميل تلقائياً عند تجاوز إجمالي إنفاقه هذا المبلغ. اترك الحقل فارغاً لتعطيل الميزة.</div>
+        <Field label="حد الإنفاق للترقية (ج.س)"><Inp type="number" value={sett.autoVip} onChange={(e: any) => upd('autoVip', e.target.value)} placeholder="مثال: 500000" /></Field>
       </Card>
       <Btn variant={saved ? 'success' : 'primary'} icon={saved ? 'check' : 'save'} onClick={save} style={{ alignSelf: 'flex-start' }}>{saved ? 'تم الحفظ!' : 'حفظ الإعدادات'}</Btn>
     </div>

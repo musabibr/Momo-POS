@@ -20,7 +20,8 @@ export function CustomersScreen() {
   const [redeemPts, setRedeemPts] = useState('')
   const [editNotes, setEditNotes] = useState('')
   const [orderHistory, setOrderHistory] = useState<any[]>([])
-  const [newCust, setNewCust] = useState({ name: '', phone: '', bday: '' })
+  const [topItems, setTopItems] = useState<any[]>([])
+  const [newCust, setNewCust] = useState({ name: '', phone: '' })
 
   const load = (q?: string) => api?.customers?.list?.(q || undefined).then((d: any) => {
     if (d) {
@@ -38,23 +39,22 @@ export function CustomersScreen() {
     if (sel?.id) {
       setEditNotes(sel.notes || '')
       api?.customers?.getOrderHistory?.(sel.id, 10).then((d: any) => setOrderHistory(Array.isArray(d) ? d : []))
+      api?.customers?.getTopItems?.(sel.id, 5).then((d: any) => setTopItems(Array.isArray(d) ? d : []))
     } else {
       setOrderHistory([])
+      setTopItems([])
     }
   }, [sel?.id])
-
-  const today = new Date()
-  const isBday = (c: any) => { if (!c.birthday) return false; const b = new Date(c.birthday); return b.getMonth() === today.getMonth() && b.getDate() === today.getDate() }
 
   const filtered = custs.filter(c => (c.name || '').includes(search) || (c.phone || '').includes(search))
 
   const addCust = async () => {
     if (!newCust.name || !newCust.phone) { toast('يرجى ملء الاسم والهاتف'); return }
     try {
-      await api?.customers?.create?.({ name: newCust.name, phone: newCust.phone, birthday: newCust.bday || null })
+      await api?.customers?.create?.({ name: newCust.name, phone: newCust.phone })
       toast('تم تسجيل العميل ✓')
       setShowAdd(false)
-      setNewCust({ name: '', phone: '', bday: '' })
+      setNewCust({ name: '', phone: '' })
       load()
     } catch (err: any) {
       toast(err?.message?.includes('UNIQUE') ? 'رقم الهاتف مسجل مسبقاً' : 'خطأ في التسجيل')
@@ -104,7 +104,6 @@ export function CustomersScreen() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 15, fontWeight: 700, color: P.plum }}>{c.name}</span>
                   {c.is_vip ? <Badge label="VIP" color="#b45309" /> : null}
-                  {isBday(c) && <Badge label="🎂 عيد ميلاد" color={P.pink} />}
                 </div>
                 <div style={{ fontSize: 13, color: P.muted, marginTop: 2 }}>{c.phone || '—'}</div>
               </div>
@@ -124,7 +123,7 @@ export function CustomersScreen() {
         {sel.is_vip ? <Badge label="VIP Guest" color="#b45309" /> : null}
       </div>
       <Card style={{ padding: 14 }}>
-        {[{ l: 'الهاتف', v: sel.phone || '—' }, { l: 'الزيارات', v: `${sel.visit_count || 0}×` }, { l: 'الإنفاق', v: `${(sel.total_spend || 0).toLocaleString()} ج.س` }, { l: 'الميلاد', v: sel.birthday || '—' }].map(f => (
+        {[{ l: 'الهاتف', v: sel.phone || '—' }, { l: 'الزيارات', v: `${sel.visit_count || 0}×` }, { l: 'الإنفاق', v: `${(sel.total_spend || 0).toLocaleString()} ج.س` }].map(f => (
           <div key={f.l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${P.border}` }}>
             <span style={{ color: P.muted }}>{f.l}</span><span style={{ color: P.ink, fontWeight: 700 }}>{f.v}</span>
           </div>
@@ -154,16 +153,51 @@ export function CustomersScreen() {
         <Icon name="star" size={14} color={P.gold} /> {sel.is_vip ? 'إزالة VIP' : 'ترقية إلى VIP'}
       </Btn>
 
+      {/* Top Items */}
+      {topItems.length > 0 && (
+        <Card style={{ padding: 14 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: P.muted, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="activity" size={14} /> الأصناف المفضلة
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {topItems.map((it: any, i: number) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: i === topItems.length - 1 ? 'none' : `1px solid ${P.border}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 22, height: 22, borderRadius: '50%', background: P.purpleXL, color: P.purple, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>{i + 1}</div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: P.ink }}>{it.item_name}</span>
+                </div>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: P.plum }}>{it.total_qty} طلب</div>
+                  <div style={{ fontSize: 11, color: P.muted }}>{(it.total_revenue || 0).toLocaleString()} ج.س</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {/* Order History */}
       <div>
         <div style={{ fontSize: 13, fontWeight: 700, color: P.muted, marginBottom: 8 }}>آخر الطلبات</div>
         {orderHistory.length === 0 ? (
           <div style={{ fontSize: 13, color: P.faint, textAlign: 'center', padding: 12 }}>لا توجد طلبات</div>
         ) : orderHistory.map((o: any) => (
-          <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '8px 0', borderBottom: `1px solid ${P.border}` }}>
-            <span style={{ color: P.ink }}>#{o.order_num || o.id}</span>
-            <span style={{ color: P.purple, fontWeight: 700 }}>{(o.total || 0).toLocaleString()} ج.س</span>
-            <span style={{ color: P.faint, fontSize: 12 }}>{o.created_at?.slice(0, 10)}</span>
+          <div key={o.id} style={{ display: 'flex', flexDirection: 'column', padding: '10px 0', borderBottom: `1px solid ${P.border}`, gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+              <span style={{ color: P.ink }}>#{o.order_num || o.id}</span>
+              <span style={{ color: P.purple, fontWeight: 700 }}>{(o.total || 0).toLocaleString()} ج.س</span>
+              <span style={{ color: P.faint, fontSize: 12 }}>{o.created_at?.slice(0, 10)}</span>
+            </div>
+            {o.items && o.items.length > 0 && (
+              <div style={{ background: P.ghost, borderRadius: 8, padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {o.items.map((it: any) => (
+                  <div key={it.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                    <span style={{ color: P.muted }}>{it.qty}x {it.item_name} {it.variation_label ? `(${it.variation_label})` : ''}</span>
+                    <span style={{ color: P.ink, fontWeight: 600 }}>{(it.unit_price * it.qty).toLocaleString()} ج.س</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -188,7 +222,6 @@ export function CustomersScreen() {
       {showAdd && <Modal title="عميل جديد" onClose={() => setShowAdd(false)} width={360} icon="user">
         <Field label="الاسم" required><Inp value={newCust.name} onChange={(e: any) => setNewCust({ ...newCust, name: e.target.value })} autoFocus /></Field>
         <Field label="الهاتف" required><Inp value={newCust.phone} onChange={(e: any) => setNewCust({ ...newCust, phone: e.target.value })} /></Field>
-        <Field label="تاريخ الميلاد"><Inp value={newCust.bday} onChange={(e: any) => setNewCust({ ...newCust, bday: e.target.value })} type="date" /></Field>
         <div style={{ display: 'flex', gap: 10, marginTop: 4 }}><Btn variant="secondary" onClick={() => setShowAdd(false)} style={{ flex: 1 }}>إلغاء</Btn><Btn variant="primary" onClick={addCust} style={{ flex: 1 }}>تسجيل</Btn></div>
       </Modal>}
 

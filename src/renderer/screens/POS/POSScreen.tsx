@@ -162,6 +162,7 @@ export function POSScreen() {
   const [newCustPhone, setNewCustPhone] = useState('')
   const [subcatId, setSubcatId] = useState<string | null>(null)
   const [orderType, setOrderType] = useState<'local'|'takeaway'>('local')
+  const [tableNum, setTableNum] = useState('')
   const [orderNote, setOrderNote] = useState('')
   const [confirming, setConfirming] = useState(false)
 
@@ -261,7 +262,7 @@ export function POSScreen() {
         cashPart: payMode === 'split' && cashPart ? parseInt(cashPart) : null,
         bankPart: payMode === 'split' ? bankPart : null,
         customerId: custMatch?.id || null,
-        orderType, orderNote: orderNote || null
+        orderType, orderNote: orderNote || null, tableNum: orderType === 'local' && tableNum ? tableNum : null
       })
 
       if (!r?.id) throw new Error('فشل في إنشاء الطلب — لم يُرجع رقم الطلب')
@@ -280,10 +281,10 @@ export function POSScreen() {
         // UI-only fields for the receipt confirmation screen
         num: r.order_num || r.id, sub, discAmt, change,
         bank, bankRef, cashPart, bankPart,
-        time: new Date().toLocaleTimeString('ar-SA'), orderType, orderNote
+        time: new Date().toLocaleTimeString('ar-SA'), orderType, orderNote, tableNum: orderType === 'local' && tableNum ? tableNum : null
       }
       setReceipt(receiptData)
-      setOrder([]); setPayMode(null); setShowPay(false); setDiscount(0); setDiscountReason(''); setCashIn(''); setBankRef(''); setCashPart(''); setShowDiscount(false); setCustMatch(null); setOrderNote(''); setOrderType('local');
+      setOrder([]); setPayMode(null); setShowPay(false); setDiscount(0); setDiscountReason(''); setCashIn(''); setBankRef(''); setCashPart(''); setShowDiscount(false); setCustMatch(null); setOrderNote(''); setTableNum(''); setOrderType('local');
       toast('✓ تم تأكيد الطلب وإرساله للطباعة')
       // Auto-print both receipts
       api?.printer?.print?.(receiptData).catch(() => {})
@@ -346,7 +347,7 @@ export function POSScreen() {
         {/* Order type highlight */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, marginBottom: 12, background: receipt.orderType === 'takeaway' ? P.goldXL : P.greenXL, border: `1.5px solid ${receipt.orderType === 'takeaway' ? P.goldL : P.greenL}` }}>
           <span style={{ fontSize: 20 }}>{receipt.orderType === 'takeaway' ? '🛍️' : '🏠'}</span>
-          <span style={{ fontSize: 16, fontWeight: 900, color: receipt.orderType === 'takeaway' ? P.gold : P.green }}>{receipt.orderType === 'takeaway' ? 'طلب سفري' : 'طلب محلي'}</span>
+          <span style={{ fontSize: 16, fontWeight: 900, color: receipt.orderType === 'takeaway' ? P.gold : P.green }}>{receipt.orderType === 'takeaway' ? 'طلب سفري' : 'طلب محلي'}{receipt.tableNum ? ` · طاولة ${receipt.tableNum}` : ''}</span>
         </div>
         <div style={{ fontSize: 14, color: P.muted, background: P.bg2, borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
           {receipt.payMode === 'split' ? `نقداً ${parseInt(receipt.cashPart || '0').toLocaleString()} + بنك ${receipt.bankPart.toLocaleString()} ج.س (${receipt.bank})`
@@ -409,7 +410,7 @@ export function POSScreen() {
             <div style={{ fontSize: 20, fontWeight: 900, color: P.plum }}>الطلب الحالي</div>
             <div style={{ display: 'flex', borderRadius: 10, overflow: 'hidden', border: `1.5px solid ${P.borderM}` }}>
               {([['local','محلي'],['takeaway','سفري']] as const).map(([k,l]) => (
-                <button key={k} onClick={() => setOrderType(k as any)} style={{ padding: '5px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: 'none', background: orderType === k ? (k === 'takeaway' ? P.gold : P.green) : 'transparent', color: orderType === k ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>{l}</button>
+                <button key={k} onClick={() => { setOrderType(k as any); if(k === 'takeaway') setTableNum(''); }} style={{ padding: '5px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: 'none', background: orderType === k ? (k === 'takeaway' ? P.gold : P.green) : 'transparent', color: orderType === k ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>{l}</button>
               ))}
             </div>
           </div>
@@ -495,8 +496,13 @@ export function POSScreen() {
           {discAmt > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, color: P.pink, marginBottom: 5 }}><span>خصم</span><span>−{discAmt.toLocaleString()} ج.س</span></div>}
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 24, fontWeight: 900, color: P.plum, marginBottom: 12 }}><span>الإجمالي</span><span style={{ color: P.purple }}>{total.toLocaleString()} ج.س</span></div>
 
-          {/* Order note */}
-          {!showPay && <input value={orderNote} onChange={e => setOrderNote(e.target.value)} placeholder="ملاحظة على الطلب…" style={{ width: '100%', padding: '9px 14px', borderRadius: 10, border: `1px solid ${P.border}`, fontSize: 15, outline: 'none', fontFamily: 'Tajawal,sans-serif', marginBottom: 8, background: orderNote ? P.goldXL : 'transparent', color: P.plum }} />}
+          {/* Order note & Table */}
+          {!showPay && <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+            {orderType === 'local' && (
+              <input value={tableNum} onChange={e => setTableNum(e.target.value)} placeholder="رقم الطاولة" style={{ width: 100, padding: '9px 14px', borderRadius: 10, border: `1.5px solid ${P.borderM}`, fontSize: 15, outline: 'none', fontFamily: 'Tajawal,sans-serif', background: tableNum ? P.greenXL : 'transparent', color: tableNum ? P.green : P.plum, fontWeight: tableNum ? 800 : 400, textAlign: 'center' }} />
+            )}
+            <input value={orderNote} onChange={e => setOrderNote(e.target.value)} placeholder="ملاحظة على الطلب…" style={{ flex: 1, padding: '9px 14px', borderRadius: 10, border: `1px solid ${P.border}`, fontSize: 15, outline: 'none', fontFamily: 'Tajawal,sans-serif', background: orderNote ? P.goldXL : 'transparent', color: P.plum }} />
+          </div>}
 
           {!showPay && order.length > 0 && <button onClick={() => setShowDiscount(!showDiscount)} style={{ width: '100%', padding: '10px', borderRadius: 10, border: `1.5px dashed ${discAmt > 0 ? P.pinkL : P.borderM}`, background: discAmt > 0 ? P.pinkXL : 'transparent', color: P.pink, cursor: 'pointer', fontSize: 15, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'Tajawal,sans-serif' }}>
             <Icon name="tag" size={15} color={P.pink} />{discAmt > 0 ? `خصم: ${discount}${discountType === 'pct' ? '%' : ' ج.س'}` : 'إضافة خصم'}

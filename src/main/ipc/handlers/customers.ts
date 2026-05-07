@@ -20,4 +20,6 @@ export function registerCustomerHandlers() {
     CustomerRepo.redeemPoints(id, points), ['admin', 'manager', 'cashier'])
   handle('customers:getOrderHistory', (customerId: number, limit?: number) =>
     CustomerRepo.getOrderHistory(customerId, limit), ['admin', 'manager'])
+  handle('customers:getTopItems', (customerId: number, limit?: number) =>
+    CustomerRepo.getTopItems(customerId, limit), ['admin', 'manager'])
 }
