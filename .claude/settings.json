@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(tar -tzf \"C:\\\\Users\\\\musab\\\\.claude\\\\projects\\\\d--projects-Momo\\\\929deb7a-5d34-42bc-b36d-a3ac7c1618c1\\\\tool-results\\\\webfetch-1777666331940-0rumh5.bin\")",
+      "PowerShell(tar -tzf \"C:\\\\Users\\\\musab\\\\.claude\\\\projects\\\\d--projects-Momo\\\\929deb7a-5d34-42bc-b36d-a3ac7c1618c1\\\\tool-results\\\\webfetch-1777666331940-0rumh5.bin\")",
+      "PowerShell(tar -xOzf \"C:\\\\Users\\\\musab\\\\.claude\\\\projects\\\\d--projects-Momo\\\\929deb7a-5d34-42bc-b36d-a3ac7c1618c1\\\\tool-results\\\\webfetch-1777666331940-0rumh5.bin\" \"momo/README.md\")",
+      "PowerShell(tar -xOzf \"C:\\\\Users\\\\musab\\\\.claude\\\\projects\\\\d--projects-Momo\\\\929deb7a-5d34-42bc-b36d-a3ac7c1618c1\\\\tool-results\\\\webfetch-1777666331940-0rumh5.bin\" \"momo/project/momo-data.js\")",
+      "PowerShell(tar -xOzf \"C:\\\\Users\\\\musab\\\\.claude\\\\projects\\\\d--projects-Momo\\\\929deb7a-5d34-42bc-b36d-a3ac7c1618c1\\\\tool-results\\\\webfetch-1777666331940-0rumh5.bin\" \"momo/project/tweaks-panel.jsx\")",
+      "PowerShell(tar -xOzf \"C:\\\\Users\\\\musab\\\\.claude\\\\projects\\\\d--projects-Momo\\\\929deb7a-5d34-42bc-b36d-a3ac7c1618c1\\\\tool-results\\\\webfetch-1777666331940-0rumh5.bin\" \"momo/chats/chat1.md\")",
+      "PowerShell($content = & tar -xOzf \"C:\\\\Users\\\\musab\\\\.claude\\\\projects\\\\d--projects-Momo\\\\929deb7a-5d34-42bc-b36d-a3ac7c1618c1\\\\tool-results\\\\webfetch-1777666331940-0rumh5.bin\" \"momo/project/Momo POS.html\"; \"TOTAL_LINES: $\\($content.Count\\)\"; \"TOTAL_CHARS: $\\(\\($content | Out-String\\).Length\\)\")",
+      "PowerShell(New-Item -ItemType Directory -Path \"d:\\\\projects\\\\Momo\\\\plans\" -Force)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"---tsc-exit: $?---\")",
+      "Bash(npm run *)",
+      "PowerShell(Remove-Item -Path \"d:\\\\projects\\\\Momo\\\\src\\\\renderer\\\\screens\\\\Shifts\\\\ShiftsScreen.tsx\" -Force; if \\(-not \\(Get-ChildItem \"d:\\\\projects\\\\Momo\\\\src\\\\renderer\\\\screens\\\\Shifts\" -ErrorAction SilentlyContinue\\)\\) { Remove-Item \"d:\\\\projects\\\\Momo\\\\src\\\\renderer\\\\screens\\\\Shifts\" -Force -ErrorAction SilentlyContinue }; Test-Path \"d:\\\\projects\\\\Momo\\\\src\\\\renderer\\\\screens\\\\Shifts\\\\ShiftsScreen.tsx\")"
+    ]
+  }
+}
