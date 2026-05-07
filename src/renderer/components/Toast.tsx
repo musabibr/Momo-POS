@@ -47,7 +47,7 @@ export function ToastHost() {
             padding: '10px 18px', borderRadius: P.radiusSm,
             fontSize: 13, fontWeight: 600,
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            animation: 'slideIn .3s cubic-bezier(.34,1.56,.64,1)',
+            animation: 'toastIn .3s var(--ease-spring)',
             minWidth: 200
           }}>
             {t.text}

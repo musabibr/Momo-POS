@@ -13,7 +13,7 @@ export class ActionLogRepo {
     let where = 'WHERE 1=1'
     const params: any[] = []
     if (filters?.startDate) { where += ' AND al.created_at >= ?'; params.push(filters.startDate) }
-    if (filters?.endDate) { where += ' AND al.created_at <= ?'; params.push(filters.endDate) }
+    if (filters?.endDate) { where += ' AND al.created_at <= ?'; params.push(filters.endDate + ' 23:59:59') }
     if (filters?.employeeId) { where += ' AND al.employee_id = ?'; params.push(filters.employeeId) }
     if (filters?.action) { where += ' AND al.action = ?'; params.push(filters.action) }
     const limit = filters?.limit || 200

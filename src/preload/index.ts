@@ -42,6 +42,10 @@ const api = {
     setAvailable: (id: number, available: boolean) => invoke('menu:setAvailable', id, available),
     saveImage: (itemId: number, base64: string) => invoke('menu:saveImage', itemId, base64),
     calculateCost: (id: number) => invoke('menu:calculateCost', id),
+    // Gallery
+    getGallery: (itemId: number) => invoke('menu:getGallery', itemId),
+    addGalleryImage: (itemId: number, base64: string) => invoke('menu:addGalleryImage', itemId, base64),
+    removeGalleryImage: (id: number) => invoke('menu:removeGalleryImage', id),
     // Categories
     listCategories: () => invoke('menu:listCategories'),
     createCategory: (data: any) => invoke('menu:createCategory', data),

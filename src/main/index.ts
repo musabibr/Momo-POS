@@ -1,5 +1,7 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, protocol, net } from 'electron'
 import { join } from 'path'
+import { existsSync } from 'fs'
+import { pathToFileURL } from 'url'
 import { initDatabase, getDb } from './db/connection'
 import { runMigrations } from './db/migrations/runner'
 import { runSeed } from './db/seed'
@@ -8,8 +10,28 @@ import { registerAllIpc } from './ipc/register'
 import { registerBackupIpc, startBackupScheduler } from './ipc/backup'
 import { registerPrinterIpc } from './ipc/printer'
 import { registerReportExportIpc } from './ipc/reportExport'
+import { getImagesPath } from './db/connection'
 
 let mainWindow: BrowserWindow | null = null
+
+/**
+ * Register custom protocol `momo-img://` to serve product images from userData/images/.
+ * This avoids file:// cross-origin issues when the renderer runs on http://localhost (dev mode).
+ * Usage: <img src="momo-img://item_1_17150.jpg" />
+ */
+function registerImageProtocol(): void {
+  protocol.handle('momo-img', (request) => {
+    // Extract filename from URL: momo-img://filename.jpg
+    const filename = decodeURIComponent(request.url.replace('momo-img://', ''))
+    const filePath = join(getImagesPath(), filename)
+
+    if (!existsSync(filePath)) {
+      return new Response('Not found', { status: 404 })
+    }
+
+    return net.fetch(pathToFileURL(filePath).toString())
+  })
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -37,6 +59,9 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  // Register custom image protocol before creating the window
+  registerImageProtocol()
+
   // Initialize database
   initDatabase()
   runMigrations()

@@ -94,7 +94,7 @@ export class PurchaseRepo {
     const params: any[] = []
     if (filters.supplierId) { where += ' AND p.supplier_id = ?'; params.push(filters.supplierId) }
     if (filters.startDate) { where += ' AND p.created_at >= ?'; params.push(filters.startDate) }
-    if (filters.endDate) { where += ' AND p.created_at <= ?'; params.push(filters.endDate) }
+    if (filters.endDate) { where += ' AND p.created_at <= ?'; params.push(filters.endDate + ' 23:59:59') }
     const limit = filters.limit || 500
 
     const purchases = db.prepare(`

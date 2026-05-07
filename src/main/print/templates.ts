@@ -46,7 +46,7 @@ export function cashierReceipt(data: ReceiptData, header: string, footer: string
   for (const item of data.items) {
     const name = item.variationLabel ? `${item.name} (${item.variationLabel})` : item.name
     const price = `${item.unitPrice * item.qty}`
-    lines.push(pad(`${item.qty}x ${name}`, price))
+    lines.push(pad(`[${item.qty}] ${name}`, price))
     if (item.modifiers?.length) {
       for (const m of item.modifiers) lines.push(`  + ${m}`)
     }
@@ -92,7 +92,7 @@ export function kitchenTicket(data: KitchenTicketData): string {
 
   for (const item of data.items) {
     const name = item.variationLabel ? `${item.name} (${item.variationLabel})` : item.name
-    lines.push(`${item.qty}x  ${name}`)
+    lines.push(`[${item.qty}]  ${name}`)
     if (item.modifiers?.length) {
       for (const m of item.modifiers) lines.push(`   + ${m}`)
     }

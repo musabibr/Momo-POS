@@ -22,7 +22,7 @@ export function runSeed(): void {
   const seedTransaction = db.transaction(() => {
 
     // ════════════════════════════════════════════════════════════
-    //  CATEGORIES — what the owner types into "إضافة تصنيف"
+    //  CATEGORIES — what the owner types into "إضافة فئة"
     // ════════════════════════════════════════════════════════════
     const cats = [
       // Root categories

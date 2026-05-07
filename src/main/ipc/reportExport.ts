@@ -21,6 +21,10 @@ export function registerReportExportIpc(): void {
         case 'items': html = PDFExporter.generateItemsHTML(filters); break
         case 'pays':  html = PDFExporter.generatePaymentsHTML(filters); break
         case 'audit': html = PDFExporter.generateAuditHTML(filters); break
+        case 'pnl':       html = PDFExporter.generatePnLHTML(filters); break
+        case 'inventory': html = PDFExporter.generateInventoryHTML(filters); break
+        case 'employees': html = PDFExporter.generateEmployeesHTML(filters); break
+        case 'customers': html = PDFExporter.generateCustomersHTML(filters); break
         default: return { error: `نوع التقرير غير معروف: ${reportType}` }
       }
 

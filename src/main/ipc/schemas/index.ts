@@ -122,7 +122,7 @@ export const pettyCashSchema = z.object({
 
 export const expenseSchema = z.object({
   amount: z.number().int().positive('المبلغ يجب أن يكون أكبر من صفر'),
-  category: z.string().min(1, 'التصنيف مطلوب'),
+  category: z.string().min(1, 'الفئة مطلوبة'),
   note: z.string().optional().default(''),
   shiftId: z.number().int().optional().nullable(),
   employeeId: z.number().int().optional().nullable(),

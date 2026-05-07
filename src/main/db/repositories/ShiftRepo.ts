@@ -65,7 +65,7 @@ export class ShiftRepo {
     const params: any[] = []
 
     if (filters.startDate) { where += ' AND s.opened_at >= ?'; params.push(filters.startDate) }
-    if (filters.endDate) { where += ' AND s.opened_at <= ?'; params.push(filters.endDate) }
+    if (filters.endDate) { where += ' AND s.opened_at <= ?'; params.push(filters.endDate + ' 23:59:59') }
     if (filters.employeeId) { where += ' AND s.employee_id = ?'; params.push(filters.employeeId) }
     if (filters.status === 'open') { where += ' AND s.closed_at IS NULL' }
     if (filters.status === 'closed') { where += ' AND s.closed_at IS NOT NULL' }

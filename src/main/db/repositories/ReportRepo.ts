@@ -6,7 +6,7 @@ export class ReportRepo {
     let where = "WHERE o.status = 'confirmed'"
     const params: any[] = []
     if (filters?.startDate) { where += ' AND o.created_at >= ?'; params.push(filters.startDate) }
-    if (filters?.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate) }
+    if (filters?.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate + ' 23:59:59') }
     if (filters?.shiftId) { where += ' AND o.shift_id = ?'; params.push(filters.shiftId) }
 
     return db.prepare(`
@@ -25,7 +25,7 @@ export class ReportRepo {
     let where = "WHERE o.status = 'confirmed'"
     const params: any[] = []
     if (filters?.startDate) { where += ' AND o.created_at >= ?'; params.push(filters.startDate) }
-    if (filters?.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate) }
+    if (filters?.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate + ' 23:59:59') }
 
     return db.prepare(`
       SELECT
@@ -42,7 +42,7 @@ export class ReportRepo {
     let where = "WHERE o.status = 'confirmed'"
     const params: any[] = []
     if (filters?.startDate) { where += ' AND o.created_at >= ?'; params.push(filters.startDate) }
-    if (filters?.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate) }
+    if (filters?.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate + ' 23:59:59') }
     const limit = filters?.limit || 20
 
     return db.prepare(`
@@ -67,7 +67,7 @@ export class ReportRepo {
     let where = "WHERE o.status = 'confirmed'"
     const params: any[] = []
     if (filters?.startDate) { where += ' AND o.created_at >= ?'; params.push(filters.startDate) }
-    if (filters?.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate) }
+    if (filters?.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate + ' 23:59:59') }
 
     return db.prepare(`
       SELECT
@@ -94,14 +94,14 @@ export class ReportRepo {
     let pWhere = "WHERE 1=1"
     const pParams: any[] = []
     if (filters?.startDate) { pWhere += ' AND created_at >= ?'; pParams.push(filters.startDate) }
-    if (filters?.endDate) { pWhere += ' AND created_at <= ?'; pParams.push(filters.endDate) }
+    if (filters?.endDate) { pWhere += ' AND created_at <= ?'; pParams.push(filters.endDate + ' 23:59:59') }
     const purchases = db.prepare(`SELECT COALESCE(SUM(total_cost), 0) as total_spent FROM purchases ${pWhere}`).get(...pParams) as any
 
     // Wastage & Damages impact over time
     let dWhere = "WHERE sa.type = 'damage'"
     const dParams: any[] = []
     if (filters?.startDate) { dWhere += ' AND sa.created_at >= ?'; dParams.push(filters.startDate) }
-    if (filters?.endDate) { dWhere += ' AND sa.created_at <= ?'; dParams.push(filters.endDate) }
+    if (filters?.endDate) { dWhere += ' AND sa.created_at <= ?'; dParams.push(filters.endDate + ' 23:59:59') }
     const damages = db.prepare(`
       SELECT COALESCE(SUM(sa.quantity * i.cost_per_unit), 0) as total_damage_cost
       FROM stock_adjustments sa
@@ -121,7 +121,7 @@ export class ReportRepo {
     let where = "WHERE o.status = 'confirmed'"
     const params: any[] = []
     if (filters?.startDate) { where += ' AND o.created_at >= ?'; params.push(filters.startDate) }
-    if (filters?.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate) }
+    if (filters?.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate + ' 23:59:59') }
 
     // Actually, let's just do an inner join for employees who made sales:
     const activeSalesByEmp = db.prepare(`
@@ -141,7 +141,7 @@ export class ReportRepo {
     let voidWhere = "WHERE action = 'ORDER_VOID' OR action = 'VOID_ORDER'"
     const vParams: any[] = []
     if (filters?.startDate) { voidWhere += ' AND created_at >= ?'; vParams.push(filters.startDate) }
-    if (filters?.endDate) { voidWhere += ' AND created_at <= ?'; vParams.push(filters.endDate) }
+    if (filters?.endDate) { voidWhere += ' AND created_at <= ?'; vParams.push(filters.endDate + ' 23:59:59') }
     const voids = db.prepare(`
       SELECT employee_id, COUNT(*) as void_count 
       FROM action_log 
@@ -170,7 +170,7 @@ export class ReportRepo {
     let pWhere = "WHERE status = 'confirmed'"
     const pParams: any[] = []
     if (filters?.startDate) { pWhere += ' AND created_at >= ?'; pParams.push(filters.startDate) }
-    if (filters?.endDate) { pWhere += ' AND created_at <= ?'; pParams.push(filters.endDate) }
+    if (filters?.endDate) { pWhere += ' AND created_at <= ?'; pParams.push(filters.endDate + ' 23:59:59') }
     const pointsRedeemed = db.prepare(`
       SELECT COALESCE(SUM(disc_amount), 0) as total_points_discount 
       FROM orders 
@@ -181,7 +181,7 @@ export class ReportRepo {
     let vWhere = "WHERE action = 'AUTO_VIP_UPGRADE'"
     const vParams: any[] = []
     if (filters?.startDate) { vWhere += ' AND created_at >= ?'; vParams.push(filters.startDate) }
-    if (filters?.endDate) { vWhere += ' AND created_at <= ?'; vParams.push(filters.endDate) }
+    if (filters?.endDate) { vWhere += ' AND created_at <= ?'; vParams.push(filters.endDate + ' 23:59:59') }
     const upgrades = db.prepare(`SELECT COUNT(*) as cnt FROM action_log ${vWhere}`).get(...vParams) as any
 
     return {

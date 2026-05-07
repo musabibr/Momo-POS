@@ -14,13 +14,13 @@ export function Card({ children, style, onClick, hover, className }: CardProps) 
   return (
     <div
       onClick={onClick}
-      className={className}
+      className={`momo-card${className ? ` ${className}` : ''}`}
       onMouseEnter={() => hover && setHov(true)}
       onMouseLeave={() => hover && setHov(false)}
       style={{
         background: P.surface, borderRadius: 16, border: `1px solid ${hov ? P.borderM : P.border}`,
         boxShadow: hov ? '0 8px 32px rgba(88,28,135,.12)' : '0 1px 4px rgba(88,28,135,.05)',
-        transition: 'all .18s', cursor: onClick ? 'pointer' : 'default', ...style
+        cursor: onClick ? 'pointer' : 'default', ...style
       }}
     >
       {children}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { P } from '../../tokens'
 import { Btn } from '../../components/Btn'
+import { MenuIcon } from '../../components/MenuIcon'
 import { Inp } from '../../components/Inp'
 import { TabBar, Badge } from '../../components/TabBar'
 import { Card } from '../../components/Card'
@@ -36,7 +37,7 @@ export function ReportsScreen() {
         <div><div style={{ fontSize: 20, fontWeight: 900, color: P.plum }}>التقارير والتحليلات</div></div>
         <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', alignItems: 'center' }}>
           {[{ k: 'today', l: 'اليوم' }, { k: 'week', l: 'أسبوع' }, { k: 'month', l: 'شهر' }, { k: 'custom', l: 'مخصص' }].map(r => (
-            <button key={r.k} onClick={() => setRange(r.k)} style={{ padding: '6px 14px', borderRadius: 99, fontSize: 14, fontWeight: range === r.k ? 800 : 500, cursor: 'pointer', border: `1.5px solid ${range === r.k ? P.purple : P.borderM}`, background: range === r.k ? P.purple : P.surface, color: range === r.k ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif', transition: 'all .15s' }}>{r.l}</button>
+            <button key={r.k} onClick={() => setRange(r.k)} className="momo-pill" style={{ padding: '6px 14px', borderRadius: 99, fontSize: 14, fontWeight: range === r.k ? 800 : 500, cursor: 'pointer', border: `1.5px solid ${range === r.k ? P.purple : P.borderM}`, background: range === r.k ? P.purple : P.surface, color: range === r.k ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>{r.l}</button>
           ))}
           {range === 'custom' && <>
             <div style={{ borderLeft: `1px solid ${P.border}`, margin: '0 4px', height: 24 }} />
@@ -94,21 +95,19 @@ function SalesReport({ filters }: any) {
   useEffect(() => {
     api?.orders?.salesSummary?.(filters).then((d: any) => d && setSummary(d))
     api?.orders?.list?.({ ...filters, status: 'confirmed' }).then((d: any) => {
-      if (!d) return
-      setOrders(d)
-      if (!d || d.length === 0) {
-        setChartData({ labels: [], values: [], title: 'خريطة المبيعات بالساعة' })
-        return
-      }
-
-      // Determine date span dynamically
-      const minDate = new Date(Math.min(...d.map((o: any) => new Date(o.created_at).getTime())))
-      const maxDate = new Date(Math.max(...d.map((o: any) => new Date(o.created_at).getTime())))
-      const spanDays = (maxDate.getTime() - minDate.getTime()) / (1000 * 3600 * 24)
+      const data = d || []
+      setOrders(data)
+      
+      // Determine date span using the provided filters or fallback to today
+      const minDate = filters.startDate ? new Date(filters.startDate) : new Date(new Date().setHours(0,0,0,0))
+      const maxDate = filters.endDate ? new Date(filters.endDate) : new Date()
+      minDate.setHours(0,0,0,0)
+      maxDate.setHours(23,59,59,999)
+      const spanDays = Math.round((maxDate.getTime() - minDate.getTime()) / (1000 * 3600 * 24))
 
       if (spanDays <= 1) {
         const hours = new Array(24).fill(0)
-        d.forEach((o: any) => {
+        data.forEach((o: any) => {
           if (o.created_at) {
             let h = parseInt(o.created_at.slice(11, 13), 10)
             if (isNaN(h)) h = new Date(o.created_at).getHours()
@@ -119,20 +118,43 @@ function SalesReport({ filters }: any) {
         setChartData({ labels, values: hours, title: 'المبيعات بالساعة (اليوم)' })
       } else if (spanDays <= 31) {
         const daysMap: Record<string, number> = {}
-        d.forEach((o: any) => {
+        // Explicitly initialize all dates in range to 0
+        for (let i = 0; i <= spanDays; i++) {
+          const dt = new Date(minDate.getTime() + i * 24 * 3600 * 1000)
+          const mStr = String(dt.getMonth() + 1).padStart(2, '0')
+          const dStr = String(dt.getDate()).padStart(2, '0')
+          daysMap[`${mStr}-${dStr}`] = 0
+        }
+        data.forEach((o: any) => {
           if (!o.created_at) return
-          const date = o.created_at.slice(5, 10) // MM-DD
-          daysMap[date] = (daysMap[date] || 0) + (o.total || 0)
+          // Parse UTC SQLite string to local Date
+          const localDt = new Date(o.created_at + (o.created_at.includes('Z') ? '' : 'Z'))
+          const mStr = String(localDt.getMonth() + 1).padStart(2, '0')
+          const dStr = String(localDt.getDate()).padStart(2, '0')
+          const dateStr = `${mStr}-${dStr}`
+          if (daysMap[dateStr] !== undefined) daysMap[dateStr] += (o.total || 0)
         })
         const labels = Object.keys(daysMap).sort()
         const values = labels.map(l => daysMap[l])
         setChartData({ labels, values, title: 'المبيعات اليومية' })
       } else {
         const monthsMap: Record<string, number> = {}
-        d.forEach((o: any) => {
+        // Explicitly initialize all months in range to 0
+        let cur = new Date(minDate)
+        cur.setDate(1) // Avoid end-of-month skipping bugs
+        while (cur <= maxDate || (cur.getFullYear() === maxDate.getFullYear() && cur.getMonth() === maxDate.getMonth())) {
+          const yStr = cur.getFullYear()
+          const mStr = String(cur.getMonth() + 1).padStart(2, '0')
+          monthsMap[`${yStr}-${mStr}`] = 0
+          cur.setMonth(cur.getMonth() + 1)
+        }
+        data.forEach((o: any) => {
           if (!o.created_at) return
-          const month = o.created_at.slice(0, 7) // YYYY-MM
-          monthsMap[month] = (monthsMap[month] || 0) + (o.total || 0)
+          const localDt = new Date(o.created_at + (o.created_at.includes('Z') ? '' : 'Z'))
+          const yStr = localDt.getFullYear()
+          const mStr = String(localDt.getMonth() + 1).padStart(2, '0')
+          const monthStr = `${yStr}-${mStr}`
+          if (monthsMap[monthStr] !== undefined) monthsMap[monthStr] += (o.total || 0)
         })
         const labels = Object.keys(monthsMap).sort()
         const values = labels.map(l => monthsMap[l])
@@ -327,7 +349,7 @@ function ItemsReport({ filters }: any) {
                   <td style={{ padding: '11px 12px', fontSize: 14, color: i < 3 ? P.gold : P.faint, fontWeight: 800 }}>#{i + 1}</td>
                   <td style={{ padding: '11px 12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 20 }}>{it.emoji || '🍮'}</span>
+                      <MenuIcon id={it.emoji} size={22} />
                       <span style={{ fontSize: 15, fontWeight: 700, color: P.plum }}>{it.name}</span>
                     </div>
                   </td>
@@ -365,7 +387,7 @@ function ItemsReport({ filters }: any) {
                 <tr key={i} style={{ borderBottom: `1px solid ${P.ghost}` }}>
                   <td style={{ padding: '10px 12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 18 }}>{it.emoji || '🍮'}</span>
+                      <MenuIcon id={it.emoji} size={20} />
                       <span style={{ fontSize: 14, fontWeight: 600, color: P.muted }}>{it.name}</span>
                     </div>
                   </td>
@@ -569,9 +591,11 @@ function AuditLog({ filters }: any) {
   }, [filterType, filters.startDate, filters.endDate])
 
   const actionLabels: Record<string, string> = {
-    ORDER_CONFIRM: 'تأكيد طلب', ORDER_VOID: 'إلغاء طلب', SHIFT_OPEN: 'فتح وردية',
-    SHIFT_CLOSE: 'إغلاق وردية', ITEM_CREATE: 'إضافة صنف', ITEM_UPDATE: 'تعديل صنف',
-    ITEM_DELETE: 'حذف صنف', PO_CREATED: 'أمر شراء', VOID_ORDER: 'إلغاء طلب'
+    ORDER_CREATED: 'إنشاء طلب', ORDER_VOID: 'إلغاء طلب', ORDER_CORRECT: 'تصحيح طلب',
+    ORDER_CORRECT_VOID: 'إلغاء (تصحيح)', SHIFT_FLOAT_EDIT: 'تعديل الصندوق',
+    SESSION_LOGIN: 'تسجيل دخول', SESSION_LOGOUT: 'تسجيل خروج', PO_CREATED: 'أمر شراء',
+    AUTO_VIP_UPGRADE: 'ترقية VIP', LOYALTY_POINTS: 'نقاط ولاء',
+    BACKUP_SUCCESS: 'نسخ احتياطي', PRINT_FAILED: 'فشل الطباعة'
   }
 
   const logsPaged = usePaginated(logs, 10)
@@ -579,9 +603,9 @@ function AuditLog({ filters }: any) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, overflow: 'hidden', minHeight: 0 }}>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        <button onClick={() => setFilterType('')} style={{ padding: '5px 14px', borderRadius: 99, fontSize: 13, fontWeight: !filterType ? 700 : 500, cursor: 'pointer', border: `1.5px solid ${!filterType ? P.purple : P.borderM}`, background: !filterType ? P.purple : P.surface, color: !filterType ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>الكل</button>
+        <button onClick={() => setFilterType('')} className="momo-pill" style={{ padding: '5px 14px', borderRadius: 99, fontSize: 13, fontWeight: !filterType ? 700 : 500, cursor: 'pointer', border: `1.5px solid ${!filterType ? P.purple : P.borderM}`, background: !filterType ? P.purple : P.surface, color: !filterType ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>الكل</button>
         {Object.entries(actionLabels).map(([k, v]) => (
-          <button key={k} onClick={() => setFilterType(k)} style={{ padding: '5px 14px', borderRadius: 99, fontSize: 13, fontWeight: filterType === k ? 700 : 500, cursor: 'pointer', border: `1.5px solid ${filterType === k ? P.purple : P.borderM}`, background: filterType === k ? P.purple : P.surface, color: filterType === k ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>{v}</button>
+          <button key={k} onClick={() => setFilterType(k)} className="momo-pill" style={{ padding: '5px 14px', borderRadius: 99, fontSize: 13, fontWeight: filterType === k ? 700 : 500, cursor: 'pointer', border: `1.5px solid ${filterType === k ? P.purple : P.borderM}`, background: filterType === k ? P.purple : P.surface, color: filterType === k ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>{v}</button>
         ))}
       </div>
       <Card style={{ flex: 1, padding: 0, overflowY: 'auto', minHeight: 0 }}>

@@ -13,10 +13,9 @@ interface ModalProps {
 
 export function Modal({ title, onClose, children, width = 440, icon, open = true }: ModalProps) {
   if (!open) return null
-  // Width clamp: cap at preferred width, but never exceed the viewport minus 32px padding.
-  // Height clamp: 92vh outer; inner body gets the remainder via flex + overflow:auto.
   return (
     <div
+      className="momo-modal-overlay"
       style={{
         position: 'fixed',
         inset: 0,
@@ -34,6 +33,7 @@ export function Modal({ title, onClose, children, width = 440, icon, open = true
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
+        className="momo-modal-panel"
         onClick={e => e.stopPropagation()}
         onKeyDown={e => e.key === 'Escape' && onClose()}
         style={{
@@ -72,7 +72,8 @@ export function Modal({ title, onClose, children, width = 440, icon, open = true
           </div>
           <button
             onClick={onClose}
-            style={{ width: 32, height: 32, borderRadius: 9, border: 'none', background: P.bg2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background .15s', flexShrink: 0 }}
+            className="momo-btn"
+            style={{ width: 32, height: 32, borderRadius: 9, border: 'none', background: P.bg2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
             onMouseEnter={e => (e.currentTarget.style.background = P.bg3)}
             onMouseLeave={e => (e.currentTarget.style.background = P.bg2)}
           >

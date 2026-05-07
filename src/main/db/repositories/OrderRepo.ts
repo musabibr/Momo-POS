@@ -167,7 +167,7 @@ export class OrderRepo {
     const params: any[] = []
 
     if (filters.startDate) { where += ' AND o.created_at >= ?'; params.push(filters.startDate) }
-    if (filters.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate) }
+    if (filters.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate + ' 23:59:59') }
     if (filters.shiftId) { where += ' AND o.shift_id = ?'; params.push(filters.shiftId) }
     if (filters.employeeId) { where += ' AND o.employee_id = ?'; params.push(filters.employeeId) }
     if (filters.payMode) { where += ' AND o.pay_mode = ?'; params.push(filters.payMode) }
@@ -367,7 +367,7 @@ export class OrderRepo {
     let where = `WHERE status = 'confirmed'`
     const params: any[] = []
     if (filters.startDate) { where += ' AND created_at >= ?'; params.push(filters.startDate) }
-    if (filters.endDate) { where += ' AND created_at <= ?'; params.push(filters.endDate) }
+    if (filters.endDate) { where += ' AND created_at <= ?'; params.push(filters.endDate + ' 23:59:59') }
 
     const stats = db.prepare(`
       SELECT COUNT(*) as total_orders,
@@ -413,7 +413,7 @@ export class OrderRepo {
     let where = `WHERE o.status = 'confirmed'`
     const params: any[] = []
     if (filters.startDate) { where += ' AND o.created_at >= ?'; params.push(filters.startDate) }
-    if (filters.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate) }
+    if (filters.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate + ' 23:59:59') }
 
     return db.prepare(`
       SELECT i.name, i.emoji, SUM(oi.qty) as total_qty, SUM(oi.qty * oi.unit_price) as total_revenue
@@ -432,7 +432,7 @@ export class OrderRepo {
     let where = `WHERE o.status = 'confirmed'`
     const params: any[] = []
     if (filters.startDate) { where += ' AND o.created_at >= ?'; params.push(filters.startDate) }
-    if (filters.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate) }
+    if (filters.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate + ' 23:59:59') }
 
     return db.prepare(`
       SELECT i.name, i.emoji,

@@ -22,7 +22,9 @@ export function runMigrations(): void {
   const possibleDirs = [
     join(process.cwd(), 'src/main/db/migrations'),
     join(__dirname, '../db/migrations'),
-    join(__dirname, 'migrations')
+    join(__dirname, 'migrations'),
+    // Production: extraResources copies migrations to resources/migrations
+    ...(process.resourcesPath ? [join(process.resourcesPath, 'migrations')] : []),
   ]
 
   let migrationFiles: { name: string; path: string }[] = []

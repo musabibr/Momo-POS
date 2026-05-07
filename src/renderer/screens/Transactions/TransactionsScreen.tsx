@@ -95,12 +95,14 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
   })
 
   const doVoid = async () => {
-    if (!voidPin || (requireReason && !voidReason)) { toast(requireReason ? 'أدخل رمز PIN وسبب الإلغاء' : 'أدخل رمز PIN'); return }
+    if (requireReason && (!voidPin || !voidReason)) { toast('أدخل رمز PIN وسبب الإلغاء'); return }
     setVoiding(true)
     try {
-      const r = await api?.employees?.verifyAnyManagerPin?.(voidPin)
-      if (!r?.valid) { toast('رمز PIN خاطئ'); setVoidPin(''); setVoiding(false); return }
-      await api?.orders?.void?.(showVoid.id, r.employeeId, voidReason || 'بدون سبب')
+      if (requireReason) {
+        const r = await api?.employees?.verifyAnyManagerPin?.(voidPin)
+        if (!r?.valid) { toast('رمز PIN خاطئ'); setVoidPin(''); setVoiding(false); return }
+      }
+      await api?.orders?.void?.(showVoid.id, employeeId || 1, voidReason || 'بدون سبب')
       toast('تم إلغاء الطلب ✓')
       setShowVoid(null); setVoidPin(''); setVoidReason(''); setSelected(null)
       load()
@@ -289,6 +291,16 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
                         <td style={{ padding: '10px', fontWeight: 900, color: P.purple, fontSize: 15 }}>{o.total?.toLocaleString()} <span style={{ fontSize: 10, fontWeight: 500 }}>ج.س</span></td>
                         <td style={{ padding: '10px' }}>
                           <span style={{ padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700, background: o.pay_mode === 'cash' ? P.greenXL : o.pay_mode === 'bank' ? `${P.blue}15` : P.goldXL, color: o.pay_mode === 'cash' ? P.green : o.pay_mode === 'bank' ? P.blue : P.gold }}>{PAY[o.pay_mode] || o.pay_mode}</span>
+                          {o.pay_mode === 'split' && (
+                            <div style={{ fontSize: 11, color: P.muted, marginTop: 5, fontWeight: 600 }}>
+                              ن: {(o.cash_part || 0).toLocaleString()} | ب: {(o.bank_part || 0).toLocaleString()}
+                            </div>
+                          )}
+                          {(o.pay_mode === 'bank' || o.pay_mode === 'split') && o.bank_ref && (
+                            <div style={{ fontSize: 10, color: P.faint, marginTop: 3, fontWeight: 500 }}>
+                              رقم العملية: {o.bank_ref}
+                            </div>
+                          )}
                         </td>
                         {isManager && <td style={{ padding: '10px', color: P.muted, fontSize: 12 }}>{emp?.name || '—'}</td>}
                         <td style={{ padding: '10px' }}>
@@ -307,7 +319,10 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
                                 <div style={{ fontSize: 11, fontWeight: 700, color: P.purple, marginBottom: 4 }}>الأصناف</div>
                                 {(o.items || []).map((it: any, i: number) => (
                                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '2px 0', borderBottom: i < (o.items||[]).length - 1 ? `1px dashed ${P.ghost}` : 'none' }}>
-                                    <span style={{ color: P.plum, fontWeight: 600 }}>{it.qty}× {it.name}{it.variation_label ? ` (${it.variation_label})` : ''}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <span style={{ color: P.purple, fontWeight: 900, background: `${P.purple}20`, padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>×{it.qty}</span>
+                                      <span style={{ color: P.plum, fontWeight: 600 }}>{it.name}{it.variation_label ? ` (${it.variation_label})` : ''}</span>
+                                    </div>
                                     <span style={{ color: P.purple, fontWeight: 700 }}>{(it.unit_price * it.qty).toLocaleString()}</span>
                                   </div>
                                 ))}
@@ -317,8 +332,8 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
                                 <div style={{ fontSize: 11, fontWeight: 700, color: P.purple, marginBottom: 4 }}>تفاصيل الدفع</div>
                                 {o.disc_amount > 0 && <div style={{ fontSize: 12, color: P.rose }}>خصم: −{o.disc_amount.toLocaleString()} {o.disc_reason ? `(${o.disc_reason})` : ''}</div>}
                                 {o.pay_mode === 'cash' && <div style={{ fontSize: 12, color: P.muted }}>المدفوع: {(o.cash_in||0).toLocaleString()} · الباقي: {(o.cash_change||0).toLocaleString()}</div>}
-                                {o.pay_mode === 'bank' && <div style={{ fontSize: 12, color: P.muted }}>{o.bank_name || 'بنك'} · مرجع: {o.bank_ref || '—'}</div>}
-                                {o.pay_mode === 'split' && <div style={{ fontSize: 12, color: P.muted }}>نقد: {(o.cash_part||0).toLocaleString()} · بنك: {(o.bank_part||0).toLocaleString()} {o.bank_name ? `(${o.bank_name})` : ''}</div>}
+                                {o.pay_mode === 'bank' && <div style={{ fontSize: 12, color: P.muted }}>{o.bank_name || 'بنك'} · رقم العملية: {o.bank_ref || '—'}</div>}
+                                {o.pay_mode === 'split' && <div style={{ fontSize: 12, color: P.muted }}>نقد: {(o.cash_part||0).toLocaleString()} · بنك: {(o.bank_part||0).toLocaleString()} {o.bank_name ? `(${o.bank_name})` : ''} {o.bank_ref ? `(رقم العملية: ${o.bank_ref})` : ''}</div>}
                                 {o.order_note && <div style={{ fontSize: 12, color: P.gold, marginTop: 3 }}>📝 {o.order_note}</div>}
                               </div>
                               {/* Actions */}
@@ -350,10 +365,13 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
           <div style={{ borderBottom: `1.5px dashed ${P.borderM}`, paddingBottom: 14, marginBottom: 14 }}>
             {(selected.items || []).map((it: any, i: number) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, marginBottom: 8 }}>
-                <div>
-                  <span style={{ fontWeight: 700, color: P.plum }}>{it.qty}× {it.name}</span>
-                  {it.variation_label && <div style={{ fontSize: 13, color: P.muted }}>{it.variation_label}</div>}
-                  {it.note && <div style={{ fontSize: 13, color: P.pinkL }}>{it.note}</div>}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontWeight: 900, color: P.purple, background: P.purpleXL, padding: '2px 6px', borderRadius: 6, fontSize: 13, minWidth: 28, textAlign: 'center' }}>×{it.qty}</span>
+                    <span style={{ fontWeight: 700, color: P.plum, fontSize: 16 }}>{it.name}</span>
+                  </div>
+                  {it.variation_label && <div style={{ fontSize: 13, color: P.muted, marginTop: 4, paddingRight: 36 }}>{it.variation_label}</div>}
+                  {it.note && <div style={{ fontSize: 13, color: P.pinkL, marginTop: 4, paddingRight: 36 }}>{it.note}</div>}
                 </div>
                 <span style={{ color: P.purple, fontWeight: 800, fontSize: 16 }}>{(it.unit_price * it.qty).toLocaleString()}</span>
               </div>
@@ -371,9 +389,9 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
           </div>
           <div style={{ fontSize: 15, color: P.muted, background: P.bg2, borderRadius: 10, padding: '10px 14px', marginBottom: 14 }}>
             {selected.pay_mode === 'split'
-              ? `مقسّم: نقداً ${(selected.cash_part||0).toLocaleString()} + بنك ${(selected.bank_part||0).toLocaleString()} ج.س ${selected.bank_name ? `(${selected.bank_name})` : ''}`
+              ? `مقسّم: نقداً ${(selected.cash_part||0).toLocaleString()} + بنك ${(selected.bank_part||0).toLocaleString()} ج.س ${selected.bank_name ? `(${selected.bank_name})` : ''} ${selected.bank_ref ? `(رقم العملية: ${selected.bank_ref})` : ''}`
               : selected.pay_mode === 'bank'
-                ? `تحويل بنكي · ${selected.bank_name||''} · مرجع: ${selected.bank_ref||'—'}`
+                ? `تحويل بنكي · ${selected.bank_name||''} · رقم العملية: ${selected.bank_ref||'—'}`
                 : `نقداً · المدفوع: ${(selected.cash_in||0).toLocaleString()} · الباقي: ${(selected.cash_change||0).toLocaleString()} ج.س`}
           </div>
           <div style={{ display: 'flex', gap: 10, fontSize: 14, color: P.faint, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -408,11 +426,15 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
             <div style={{ fontSize: 14, color: P.muted, marginTop: 4 }}>سيتم استرجاع المخزون وإلغاء نقاط الولاء</div>
             <div style={{ fontSize: 18, fontWeight: 900, color: P.rose, marginTop: 8 }}>{showVoid.total?.toLocaleString()} ج.س</div>
           </div>
-          <Field label="سبب الإلغاء" required={requireReason}><Inp value={voidReason} onChange={(e: any) => setVoidReason(e.target.value)} placeholder={requireReason ? 'مثال: خطأ في الطلب' : 'اختياري'} autoFocus /></Field>
-          <Field label="رمز PIN لمدير/مسؤول" required><Inp type="password" value={voidPin} onChange={(e: any) => setVoidPin(e.target.value)} placeholder="أدخل PIN المدير" /></Field>
+          {requireReason && (
+            <>
+              <Field label="سبب الإلغاء" required><Inp value={voidReason} onChange={(e: any) => setVoidReason(e.target.value)} placeholder="مثال: خطأ في الطلب" autoFocus /></Field>
+              <Field label="رمز PIN لمدير/مسؤول" required><Inp type="password" value={voidPin} onChange={(e: any) => setVoidPin(e.target.value)} placeholder="أدخل PIN المدير" /></Field>
+            </>
+          )}
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <Btn variant="secondary" style={{ flex: 1 }} onClick={() => setShowVoid(null)}>تراجع</Btn>
-            <Btn variant="danger" style={{ flex: 1 }} disabled={voiding || !voidPin || (requireReason && !voidReason)} onClick={doVoid}>
+            <Btn variant="danger" style={{ flex: 1 }} disabled={voiding || (requireReason && (!voidPin || !voidReason))} onClick={doVoid}>
               {voiding ? 'جاري الإلغاء…' : 'تأكيد الإلغاء'}
             </Btn>
           </div>
@@ -462,7 +484,7 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
                   <span style={{ fontWeight: 700, color: hasChanges ? P.rose : P.ink }}>{newSub.toLocaleString()} ج.س</span>
                 </div>
                 {hasChanges && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: P.rose, marginBottom: 4 }}>
-                  <span>الفرق</span>
+                  <span>المبلغ المسترد (نقداً)</span>
                   <span>−{(showCorrect.subtotal - newSub).toLocaleString()} ج.س</span>
                 </div>}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 20, fontWeight: 900, color: P.plum, marginBottom: 14 }}>
@@ -472,15 +494,21 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
               </>
             )
           })()}
-          <Field label="سبب التصحيح" required={requireReason}><Inp value={corrReason} onChange={(e: any) => setCorrReason(e.target.value)} placeholder={requireReason ? 'مثال: العميل غير رأيه' : 'اختياري'} autoFocus /></Field>
-          <Field label="رمز PIN لمدير/مسؤول" required><Inp type="password" value={corrPin} onChange={(e: any) => setCorrPin(e.target.value)} placeholder="أدخل PIN المدير" /></Field>
+          {requireReason && (
+            <>
+              <Field label="سبب التصحيح" required><Inp value={corrReason} onChange={(e: any) => setCorrReason(e.target.value)} placeholder="مثال: العميل غير رأيه" autoFocus /></Field>
+              <Field label="رمز PIN لمدير/مسؤول" required><Inp type="password" value={corrPin} onChange={(e: any) => setCorrPin(e.target.value)} placeholder="أدخل PIN المدير" /></Field>
+            </>
+          )}
           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
             <Btn variant="secondary" style={{ flex: 1 }} onClick={() => setShowCorrect(null)}>تراجع</Btn>
-            <Btn variant="primary" style={{ flex: 1 }} disabled={correcting || !corrPin || (requireReason && !corrReason) || !corrItems.some((it: any) => it.newQty !== it.qty)} onClick={async () => {
+            <Btn variant="primary" style={{ flex: 1 }} disabled={correcting || (requireReason && (!corrPin || !corrReason)) || !corrItems.some((it: any) => it.newQty !== it.qty)} onClick={async () => {
               setCorrecting(true)
               try {
-                const r = await api?.employees?.verifyAnyManagerPin?.(corrPin)
-                if (!r?.valid) { toast('رمز PIN خاطئ'); setCorrPin(''); setCorrecting(false); return }
+                if (requireReason) {
+                  const r = await api?.employees?.verifyAnyManagerPin?.(corrPin)
+                  if (!r?.valid) { toast('رمز PIN خاطئ'); setCorrPin(''); setCorrecting(false); return }
+                }
                 const changes = corrItems.filter((it: any) => it.newQty !== it.qty).map((it: any) => ({ orderItemId: it.id, newQty: it.newQty }))
                 await api?.orders?.correct?.(showCorrect.id, corrReason || 'بدون سبب', changes)
                 toast('✓ تم تصحيح الطلب')

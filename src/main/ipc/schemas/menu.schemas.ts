@@ -27,6 +27,7 @@ export const createMenuItemSchema = z.object({
   description: z.string().optional().nullable(),
   imagePath: z.string().optional().nullable(),
   barcode: z.string().optional().nullable(),
+  displayMode: z.enum(['icon', 'image']).optional(),
   optionGroups: z.array(itemOptionGroupSchema).optional(),
 })
 

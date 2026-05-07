@@ -208,7 +208,7 @@ export class PDFExporter {
         <div class="kpi-card"><div class="kpi-label">عدد الأصناف الفريدة</div><div class="kpi-value">${fmtNum(items.length)}</div></div>
       </div>
 
-      <div class="section-title">تصنيف الأصناف حسب المبيعات</div>
+      <div class="section-title">فئات الأصناف حسب المبيعات</div>
       <table>
         <thead><tr>
           <th>#</th><th>الصنف</th><th>الكمية المباعة</th><th>الإيرادات</th><th>النسبة</th>
@@ -366,6 +366,208 @@ export class PDFExporter {
     return htmlShell('سجل العمليات', dateRange, body)
   }
 
+  static generatePnLHTML(filters: { startDate?: string; endDate?: string }): string {
+    const db = getDb()
+    let where = "WHERE o.status = 'confirmed'"
+    const params: any[] = []
+    if (filters.startDate) { where += ' AND o.created_at >= ?'; params.push(filters.startDate) }
+    if (filters.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate + ' 23:59:59') }
+
+    const stats = db.prepare(`
+      SELECT COUNT(*) as total_orders, COALESCE(SUM(o.total), 0) as total_revenue,
+             COALESCE(SUM(o.disc_amount), 0) as total_discount
+      FROM orders o ${where}
+    `).get(...params) as any
+
+    const cogsRow = db.prepare(`
+      SELECT COALESCE(SUM(oi.unit_cost * oi.qty), 0) as total_cost
+      FROM order_items oi JOIN orders o ON o.id = oi.order_id
+      ${where.replace(/\b(status|created_at|disc_amount)\b/g, 'o.$1')}
+    `).get(...params) as any
+
+    // Expenses
+    let eWhere = 'WHERE 1=1'
+    const eParams: any[] = []
+    if (filters.startDate) { eWhere += ' AND created_at >= ?'; eParams.push(filters.startDate) }
+    if (filters.endDate) { eWhere += ' AND created_at <= ?'; eParams.push(filters.endDate + ' 23:59:59') }
+    const expenses = db.prepare(`SELECT COALESCE(SUM(amount), 0) as total FROM expenses ${eWhere}`).get(...eParams) as any
+
+    const revenue = stats.total_revenue || 0
+    const cogs = cogsRow.total_cost || 0
+    const grossProfit = revenue - cogs
+    const totalExpenses = expenses.total || 0
+    const netProfit = grossProfit - totalExpenses
+    const grossMargin = revenue > 0 ? Math.round(grossProfit / revenue * 100) : 0
+    const netMargin = revenue > 0 ? Math.round(netProfit / revenue * 100) : 0
+
+    const rows = [
+      { l: 'الإيرادات', v: revenue, c: '#7c3aed' },
+      { l: '(−) تكلفة البضاعة', v: cogs, c: '#e11d48' },
+      { l: '= الربح الإجمالي', v: grossProfit, c: grossProfit > 0 ? '#047857' : '#e11d48', bold: true },
+      { l: '(−) المصروفات', v: totalExpenses, c: '#e67e22' },
+      { l: '= صافي الربح', v: netProfit, c: netProfit > 0 ? '#047857' : '#e11d48', bold: true },
+    ]
+
+    const body = `
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">إجمالي الإيرادات</div><div class="kpi-value">${fmtNum(revenue)} ج.س</div></div>
+        <div class="kpi-card"><div class="kpi-label">الربح الإجمالي</div><div class="kpi-value" style="color:${grossProfit > 0 ? '#047857' : '#e11d48'}">${fmtNum(grossProfit)} ج.س</div><div class="kpi-sub">هامش ${grossMargin}%</div></div>
+        <div class="kpi-card"><div class="kpi-label">صافي الربح</div><div class="kpi-value" style="color:${netProfit > 0 ? '#047857' : '#e11d48'}">${fmtNum(netProfit)} ج.س</div><div class="kpi-sub">هامش ${netMargin}%</div></div>
+      </div>
+      <div class="section-title">قائمة الأرباح والخسائر</div>
+      <table>
+        <thead><tr><th>البند</th><th>المبلغ</th></tr></thead>
+        <tbody>
+          ${rows.map(r => `<tr style="${(r as any).bold ? 'background:#f5f3ff;font-weight:900' : ''}">
+            <td style="font-weight:${(r as any).bold ? 900 : 600}">${r.l}</td>
+            <td style="font-weight:800;color:${r.c};font-size:14px">${fmtNum(r.v)} ج.س</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    `
+    const dateRange = `${filters.startDate || 'البداية'} — ${filters.endDate || 'الآن'}`
+    return htmlShell('تقرير الأرباح والخسائر', dateRange, body)
+  }
+
+  static generateInventoryHTML(filters: { startDate?: string; endDate?: string }): string {
+    const db = getDb()
+    const valuation = db.prepare(`
+      SELECT COALESCE(SUM(s.quantity * i.cost_per_unit), 0) as total_value
+      FROM inventory_stock s JOIN inventory_items i ON i.id = s.item_id WHERE i.cost_per_unit > 0
+    `).get() as any
+
+    let pWhere = 'WHERE 1=1'
+    const pParams: any[] = []
+    if (filters.startDate) { pWhere += ' AND created_at >= ?'; pParams.push(filters.startDate) }
+    if (filters.endDate) { pWhere += ' AND created_at <= ?'; pParams.push(filters.endDate + ' 23:59:59') }
+    const purchases = db.prepare(`SELECT COALESCE(SUM(total_cost), 0) as total_spent FROM purchases ${pWhere}`).get(...pParams) as any
+
+    const items = db.prepare(`
+      SELECT i.name, i.unit, i.cost_per_unit,
+        COALESCE((SELECT quantity FROM inventory_stock WHERE item_id = i.id AND location_id = 'main'), 0) as stock_main,
+        COALESCE((SELECT quantity FROM inventory_stock WHERE item_id = i.id AND location_id = 'kitchen'), 0) as stock_kitchen,
+        i.low_threshold
+      FROM inventory_items i WHERE i.archived = 0 ORDER BY i.name
+    `).all() as any[]
+
+    const body = `
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">قيمة المخزون الحالي</div><div class="kpi-value">${fmtNum(valuation.total_value)} ج.س</div></div>
+        <div class="kpi-card"><div class="kpi-label">المشتريات في الفترة</div><div class="kpi-value" style="color:#1d4ed8">${fmtNum(purchases.total_spent)} ج.س</div></div>
+        <div class="kpi-card"><div class="kpi-label">عدد الأصناف</div><div class="kpi-value">${fmtNum(items.length)}</div></div>
+      </div>
+      <div class="section-title">تفاصيل المخزون</div>
+      <table>
+        <thead><tr><th>المنتج</th><th>الوحدة</th><th>المستودع</th><th>المطبخ</th><th>الحد الأدنى</th><th>التكلفة</th><th>الحالة</th></tr></thead>
+        <tbody>
+          ${items.map(it => {
+            const total = (it.stock_main || 0) + (it.stock_kitchen || 0)
+            const isLow = it.low_threshold > 0 && total <= it.low_threshold
+            return `<tr>
+              <td style="font-weight:700">${it.name}</td>
+              <td>${it.unit}</td>
+              <td style="font-weight:800">${fmtNum(it.stock_main)}</td>
+              <td style="font-weight:800;color:#b45309">${fmtNum(it.stock_kitchen)}</td>
+              <td>${it.low_threshold || '—'}</td>
+              <td>${it.cost_per_unit ? fmtNum(it.cost_per_unit) + ' ج.س' : '—'}</td>
+              <td><span class="badge ${isLow ? 'badge-amber' : 'badge-green'}">${isLow ? 'منخفض' : 'جيد'}</span></td>
+            </tr>`
+          }).join('')}
+        </tbody>
+      </table>
+    `
+    const dateRange = `${filters.startDate || 'البداية'} — ${filters.endDate || 'الآن'}`
+    return htmlShell('تقرير المخزون', dateRange, body)
+  }
+
+  static generateEmployeesHTML(filters: { startDate?: string; endDate?: string }): string {
+    const db = getDb()
+    let where = "WHERE o.status = 'confirmed'"
+    const params: any[] = []
+    if (filters.startDate) { where += ' AND o.created_at >= ?'; params.push(filters.startDate) }
+    if (filters.endDate) { where += ' AND o.created_at <= ?'; params.push(filters.endDate + ' 23:59:59') }
+
+    const stats = db.prepare(`
+      SELECT e.name, e.role, COUNT(o.id) as order_count,
+        COALESCE(SUM(o.total), 0) as total_sales,
+        COALESCE(SUM(o.disc_amount), 0) as total_discounts
+      FROM orders o JOIN employees e ON e.id = o.employee_id
+      ${where} GROUP BY e.id ORDER BY total_sales DESC
+    `).all(...params) as any[]
+
+    const grandTotal = stats.reduce((s, e) => s + (e.total_sales || 0), 0)
+
+    const body = `
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">إجمالي مبيعات الفريق</div><div class="kpi-value">${fmtNum(grandTotal)} ج.س</div></div>
+        <div class="kpi-card"><div class="kpi-label">عدد الموظفين النشطين</div><div class="kpi-value">${fmtNum(stats.length)}</div></div>
+      </div>
+      <div class="section-title">أداء الموظفين</div>
+      <table>
+        <thead><tr><th>الموظف</th><th>الدور</th><th>عدد الطلبات</th><th>المبيعات</th><th>الخصومات</th><th>النسبة</th></tr></thead>
+        <tbody>
+          ${stats.map(e => {
+            const pct = grandTotal > 0 ? Math.round(e.total_sales / grandTotal * 100) : 0
+            return `<tr>
+              <td style="font-weight:800;color:#581c87">${e.name}</td>
+              <td><span class="badge badge-gray">${e.role}</span></td>
+              <td>${fmtNum(e.order_count)} طلب</td>
+              <td style="font-weight:800;color:#7c3aed">${fmtNum(e.total_sales)} ج.س</td>
+              <td style="color:${e.total_discounts > 0 ? '#b45309' : '#94a3b8'}">${fmtNum(e.total_discounts)} ج.س</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <div style="flex:1;height:6px;background:#f1f0fb;border-radius:99px">
+                    <div style="height:100%;width:${pct}%;background:#7c3aed;border-radius:99px"></div>
+                  </div>
+                  <span style="font-size:10px;font-weight:700;color:#7c3aed">${pct}%</span>
+                </div>
+              </td>
+            </tr>`
+          }).join('')}
+        </tbody>
+      </table>
+    `
+    const dateRange = `${filters.startDate || 'البداية'} — ${filters.endDate || 'الآن'}`
+    return htmlShell('تقرير أداء الموظفين', dateRange, body)
+  }
+
+  static generateCustomersHTML(filters: { startDate?: string; endDate?: string }): string {
+    const db = getDb()
+    const totalCustomers = (db.prepare(`SELECT COUNT(*) as cnt FROM customers`).get() as any).cnt
+    const totalVip = (db.prepare(`SELECT COUNT(*) as cnt FROM customers WHERE is_vip = 1`).get() as any).cnt
+    const totalPoints = (db.prepare(`SELECT COALESCE(SUM(points), 0) as pts FROM customers`).get() as any).pts
+
+    const topCustomers = db.prepare(`
+      SELECT name, phone, points, total_spend, visit_count, is_vip
+      FROM customers ORDER BY total_spend DESC LIMIT 20
+    `).all() as any[]
+
+    const body = `
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">إجمالي العملاء</div><div class="kpi-value" style="color:#1d4ed8">${fmtNum(totalCustomers)}</div></div>
+        <div class="kpi-card"><div class="kpi-label">عملاء VIP</div><div class="kpi-value" style="color:#b45309">${fmtNum(totalVip)}</div></div>
+        <div class="kpi-card"><div class="kpi-label">النقاط المتوفرة</div><div class="kpi-value">${fmtNum(totalPoints)}</div></div>
+      </div>
+      <div class="section-title">أعلى 20 عميل حسب الإنفاق</div>
+      <table>
+        <thead><tr><th>#</th><th>العميل</th><th>الهاتف</th><th>إجمالي الإنفاق</th><th>الزيارات</th><th>النقاط</th><th>VIP</th></tr></thead>
+        <tbody>
+          ${topCustomers.map((c, i) => `<tr>
+            <td style="font-weight:800;color:${i < 3 ? '#b45309' : '#94a3b8'}">#${i + 1}</td>
+            <td style="font-weight:700">${c.name}</td>
+            <td style="color:#64748b">${c.phone || '—'}</td>
+            <td style="font-weight:800;color:#7c3aed">${fmtNum(c.total_spend)} ج.س</td>
+            <td>${fmtNum(c.visit_count)}</td>
+            <td style="color:#047857;font-weight:700">${fmtNum(c.points)}</td>
+            <td>${c.is_vip ? '<span class="badge badge-amber">VIP ⭐</span>' : '—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    `
+    const dateRange = `${filters.startDate || 'البداية'} — ${filters.endDate || 'الآن'}`
+    return htmlShell('تقرير العملاء والولاء', dateRange, body)
+  }
+
   // ─── PDF Generation via hidden BrowserWindow ──────────────
 
   static async htmlToPDF(html: string): Promise<Buffer> {
@@ -408,7 +610,8 @@ export class PDFExporter {
 
   static async saveToFile(pdfBuffer: Buffer, reportType: string, filters: { startDate?: string; endDate?: string }): Promise<string> {
     const reportNames: Record<string, string> = {
-      sales: 'مبيعات', items: 'أصناف', pays: 'طرق_الدفع', audit: 'سجل_العمليات'
+      sales: 'مبيعات', items: 'أصناف', pays: 'طرق_الدفع', audit: 'سجل_العمليات',
+      pnl: 'أرباح_وخسائر', inventory: 'مخزون', employees: 'أداء_الموظفين', customers: 'عملاء'
     }
     const start = filters.startDate || 'all'
     const end = filters.endDate || 'all'

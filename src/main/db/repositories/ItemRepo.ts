@@ -1,8 +1,26 @@
 import { getDb } from '../connection'
+import { getImagesPath } from '../connection'
+import { join } from 'path'
+import { existsSync } from 'fs'
 
 export class ItemRepo {
   /**
-   * Attach option groups + options to an item row.
+   * Resolve an image filename to a momo-img:// URL that the renderer can load.
+   * Uses a custom Electron protocol to avoid cross-origin issues in dev mode.
+   * Returns null if the file doesn't exist or no filename is provided.
+   */
+  private static resolveImagePath(filename: string | null | undefined): string | null {
+    if (!filename) return null
+    // If it's already a data URI, full URL, or custom protocol, return as-is
+    if (filename.startsWith('data:') || filename.startsWith('http') || filename.startsWith('file:') || filename.startsWith('momo-img://')) return filename
+    const fullPath = join(getImagesPath(), filename)
+    if (!existsSync(fullPath)) return null
+    return 'momo-img://' + encodeURIComponent(filename)
+  }
+
+  /**
+   * Attach option groups + options + gallery images to an item row.
+   * Resolves image_path filenames to full file:// URLs for the renderer.
    */
   private static attachOptions(item: any): any {
     const db = getDb()
@@ -24,7 +42,24 @@ export class ItemRepo {
         }))
       }
     })
-    return { ...item, available: item.available === 1, optionGroups }
+
+    // Attach gallery images (with resolved URLs)
+    const rawGallery = db.prepare(`SELECT * FROM item_gallery WHERE item_id = ? ORDER BY sort_order, id`).all(item.id) as any[]
+    const gallery = rawGallery.map((g: any) => ({
+      ...g,
+      image_path: ItemRepo.resolveImagePath(g.image_path) || g.image_path
+    }))
+
+    // Resolve the main image_path to a full file:// URL
+    const resolvedImagePath = ItemRepo.resolveImagePath(item.image_path)
+
+    return {
+      ...item,
+      image_path: resolvedImagePath,
+      available: item.available === 1,
+      optionGroups,
+      gallery
+    }
   }
 
   static list() {
@@ -50,12 +85,13 @@ export class ItemRepo {
     const db = getDb()
     return db.transaction(() => {
       const result = db.prepare(`
-        INSERT INTO items (name, description, price, cost, cat_id, subcat_id, emoji, image_path, available, barcode)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO items (name, description, price, cost, cat_id, subcat_id, emoji, image_path, available, barcode, display_mode)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         data.name, data.description || null, data.price, data.cost || null,
         data.catId || null, data.subcatId || null, data.emoji || '🍮',
-        data.imagePath || null, data.available !== false ? 1 : 0, data.barcode || null
+        data.imagePath || null, data.available !== false ? 1 : 0, data.barcode || null,
+        data.displayMode || 'icon'
       )
       const itemId = result.lastInsertRowid as number
 
@@ -83,6 +119,7 @@ export class ItemRepo {
       if (data.imagePath !== undefined) { sets.push('image_path = ?'); vals.push(data.imagePath) }
       if (data.available !== undefined) { sets.push('available = ?'); vals.push(data.available ? 1 : 0) }
       if (data.barcode !== undefined) { sets.push('barcode = ?'); vals.push(data.barcode) }
+      if (data.displayMode !== undefined) { sets.push('display_mode = ?'); vals.push(data.displayMode) }
 
       if (sets.length > 0) {
         vals.push(id)
@@ -158,5 +195,34 @@ export class ItemRepo {
       total += line.quantity * line.cost_per_unit
     }
     return Math.round(total)
+  }
+
+  // ── Gallery Methods ─────────────────────────────────────────────
+
+  static getGallery(itemId: number) {
+    const db = getDb()
+    const rows = db.prepare(`SELECT * FROM item_gallery WHERE item_id = ? ORDER BY sort_order, id`).all(itemId) as any[]
+    return rows.map((g: any) => ({
+      ...g,
+      image_path: ItemRepo.resolveImagePath(g.image_path) || g.image_path
+    }))
+  }
+
+  static addGalleryImage(itemId: number, imagePath: string) {
+    const db = getDb()
+    const maxSort = db.prepare(`SELECT COALESCE(MAX(sort_order), -1) as ms FROM item_gallery WHERE item_id = ?`).get(itemId) as any
+    const sortOrder = (maxSort?.ms ?? -1) + 1
+    const result = db.prepare(`INSERT INTO item_gallery (item_id, image_path, sort_order) VALUES (?, ?, ?)`).run(itemId, imagePath, sortOrder)
+    return {
+      id: result.lastInsertRowid,
+      item_id: itemId,
+      image_path: ItemRepo.resolveImagePath(imagePath) || imagePath,
+      sort_order: sortOrder
+    }
+  }
+
+  static removeGalleryImage(id: number) {
+    const db = getDb()
+    db.prepare(`DELETE FROM item_gallery WHERE id = ?`).run(id)
   }
 }

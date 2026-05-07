@@ -1,15 +1,47 @@
-import React from 'react'
+import React, { useState, useImperativeHandle, forwardRef, useRef } from 'react'
 import { P } from '../../../tokens'
 import { Inp, Sel } from '../../../components/Inp'
 import { Icon } from '../../../components/Icon'
 
-export const OptionGroupsEditor = ({ groups, onChange }: { groups: any[], onChange: (g: any[]) => void }) => {
-  const addGroup = () => onChange([...groups, { name: '', type: 'single', kind: 'variation', options: [] }])
-  const updGroup = (i: number, patch: any) => onChange(groups.map((g, gi) => gi === i ? { ...g, ...patch } : g))
-  const delGroup = (i: number) => onChange(groups.filter((_, gi) => gi !== i))
-  const addOpt = (gi: number) => updGroup(gi, { options: [...groups[gi].options, { name: '', priceAdj: 0 }] })
-  const updOpt = (gi: number, oi: number, patch: any) => updGroup(gi, { options: groups[gi].options.map((o: any, j: number) => j === oi ? { ...o, ...patch } : o) })
-  const delOpt = (gi: number, oi: number) => updGroup(gi, { options: groups[gi].options.filter((_: any, j: number) => j !== oi) })
+/**
+ * OptionGroupsEditor owns its own state.
+ * Uses a mutable ref (groupsRef.current) that's ALWAYS the latest state —
+ * no closure staleness possible.
+ */
+export const OptionGroupsEditor = forwardRef(({ initialGroups }: { initialGroups: any[] }, ref) => {
+  const [groups, setGroups] = useState<any[]>(initialGroups || [])
+
+  // Mutable ref always holds the latest groups - updated synchronously on every render
+  const groupsRef = useRef(groups)
+  groupsRef.current = groups
+
+  // Expose via ref - reads from mutable ref, never from a closure
+  useImperativeHandle(ref, () => ({
+    getGroups: () => groupsRef.current
+  }))
+
+  const addGroup = () => setGroups(prev => [...prev, { name: '', type: 'single', kind: 'variation', options: [] }])
+  const updGroup = (i: number, patch: any) => {
+    setGroups(prev => {
+      const next = prev.map((g, gi) => gi === i ? { ...g, ...patch } : g)
+      groupsRef.current = next  // sync ref immediately
+      return next
+    })
+  }
+  const delGroup = (i: number) => setGroups(prev => { const next = prev.filter((_, gi) => gi !== i); groupsRef.current = next; return next })
+  const addOpt = (gi: number) => setGroups(prev => {
+    const next = prev.map((g, i) => i === gi ? { ...g, options: [...g.options, { name: '', priceAdj: 0 }] } : g)
+    groupsRef.current = next; return next
+  })
+  const updOpt = (gi: number, oi: number, patch: any) => setGroups(prev => {
+    const next = prev.map((g, i) => i === gi ? { ...g, options: g.options.map((o: any, j: number) => j === oi ? { ...o, ...patch } : o) } : g)
+    groupsRef.current = next; return next
+  })
+  const delOpt = (gi: number, oi: number) => setGroups(prev => {
+    const next = prev.map((g, i) => i === gi ? { ...g, options: g.options.filter((_: any, j: number) => j !== oi) } : g)
+    groupsRef.current = next; return next
+  })
+
   return (
     <div>
       {groups.map((g, gi) => (
@@ -37,4 +69,4 @@ export const OptionGroupsEditor = ({ groups, onChange }: { groups: any[], onChan
       </button>
     </div>
   )
-}
+})

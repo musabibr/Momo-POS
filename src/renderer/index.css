@@ -81,6 +81,13 @@
   --shadowL:   0 16px 64px rgba(88,28,135,.18);
   --sidebarW:  230px;
   --topbarH:   50px;
+
+  /* ── Animation Tokens ── */
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast:    120ms;
+  --dur-base:    200ms;
+  --dur-slow:    350ms;
 }
 
 *, *::before, *::after {
@@ -173,8 +180,6 @@ th, td { text-align: right; }
 /* ── Hover states (ONLY item cards float, not all buttons) ── */
 .item-card { transition: all .18s cubic-bezier(.34, 1.1, .64, 1); }
 .item-card:hover { transform: translateY(-3px); box-shadow: var(--shadowM); }
-.nav-btn { transition: all .15s; }
-.nav-btn:hover { background: var(--ghost) !important; }
 
 /* ── Image placeholder ── */
 .img-placeholder {
@@ -216,10 +221,6 @@ th, td { text-align: right; }
 }
 
 /* ── Premium Button System ── */
-.momo-btn {
-  -webkit-user-select: none;
-  user-select: none;
-}
 .btn-primary:hover:not(:disabled) { background: linear-gradient(135deg,#7c3aed,#6d28d9) !important; }
 .btn-primary:active:not(:disabled) { background: linear-gradient(135deg,#6d28d9,#5b21b6) !important; }
 .btn-secondary:hover:not(:disabled) { background: #f5edff !important; }
@@ -272,13 +273,13 @@ th, td { text-align: right; }
 
 /* ── POS Payment/Denomination ── */
 .pos-pay-btn {
-  transition: box-shadow .15s ease;
+  transition: box-shadow var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 .pos-pay-btn:hover {
   box-shadow: 0 3px 10px rgba(147,51,234,.1);
 }
 .pos-denom-btn {
-  transition: box-shadow .12s ease, background .12s ease;
+  transition: box-shadow var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
 }
 .pos-denom-btn:hover {
   box-shadow: 0 2px 8px rgba(4,120,87,.1);
@@ -286,3 +287,80 @@ th, td { text-align: right; }
 .pos-denom-btn:active {
   background: #d1fae5 !important;
 }
+
+/* ══════════════════════════════════════════════
+   UNIFIED ANIMATION SYSTEM
+   ══════════════════════════════════════════════ */
+
+/* ── Buttons: smooth transition on all interactive properties ── */
+.momo-btn {
+  -webkit-user-select: none;
+  user-select: none;
+  transition: background var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out),
+              opacity var(--dur-fast) var(--ease-out),
+              transform 80ms var(--ease-out);
+}
+.momo-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* ── Tabs: prevent layout jitter on weight change ── */
+.momo-tab {
+  transition: background var(--dur-base) var(--ease-out),
+              color var(--dur-base) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out);
+  min-width: 64px;
+  text-align: center;
+}
+
+/* ── Pills: category / filter pill buttons ── */
+.momo-pill {
+  transition: background var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out),
+              transform 80ms var(--ease-out);
+}
+.momo-pill:active {
+  transform: scale(0.96);
+}
+
+/* ── Cards: hover lift ── */
+.momo-card {
+  transition: border-color var(--dur-base) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out);
+}
+
+/* ── Toggle: smooth knob movement ── */
+.momo-toggle {
+  transition: background var(--dur-base) var(--ease-out);
+}
+.momo-toggle-knob {
+  transition: right var(--dur-base) var(--ease-spring);
+}
+
+/* ── Modal entrance ── */
+@keyframes modalOverlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes modalPanelIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.momo-modal-overlay {
+  animation: modalOverlayIn var(--dur-base) var(--ease-out) both;
+}
+.momo-modal-panel {
+  animation: modalPanelIn var(--dur-slow) var(--ease-spring) both;
+}
+
+/* ── Nav buttons: unified sidebar transition ── */
+.nav-btn {
+  transition: background var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out);
+}
+.nav-btn:hover { background: var(--ghost) !important; }

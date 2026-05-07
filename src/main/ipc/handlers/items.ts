@@ -4,12 +4,12 @@ import { CategoryRepo } from '../../db/repositories/CategoryRepo'
 import { RecipeRepo } from '../../db/repositories/RecipeRepo'
 import { createMenuItemSchema, updateMenuItemSchema } from '../schemas/menu.schemas'
 import { getImagesPath } from '../../db/connection'
-import { writeFileSync, existsSync, mkdirSync } from 'fs'
+import { writeFileSync, existsSync, mkdirSync, unlinkSync } from 'fs'
 import { join } from 'path'
 
 /**
- * Menu IPC handlers — menu items, categories, recipes.
- * Owns the entire menu domain: items, categories, option groups, recipes, images.
+ * Menu IPC handlers — menu items, categories, recipes, gallery.
+ * Owns the entire menu domain: items, categories, option groups, recipes, images, galleries.
  */
 export function registerMenuHandlers() {
   // ── Menu Items ──────────────────
@@ -44,6 +44,30 @@ export function registerMenuHandlers() {
     writeFileSync(filePath, Buffer.from(data, 'base64'))
     ItemRepo.update(itemId, { imagePath: fileName })
     return fileName
+  }, ['admin', 'manager'])
+
+  // ── Gallery ──────────────────
+  handle('menu:getGallery', (itemId: number) => ItemRepo.getGallery(itemId), ['admin', 'manager', 'cashier'])
+
+  handle('menu:addGalleryImage', (itemId: number, base64: string) => {
+    const MAX_BASE64_SIZE = 4_000_000
+    if (!base64 || base64.length > MAX_BASE64_SIZE) throw new Error('الصورة كبيرة جداً أو غير صالحة')
+
+    const mimeMatch = base64.match(/^data:image\/(png|jpe?g|gif|webp);base64,/)
+    if (!mimeMatch) throw new Error('نوع الملف غير مدعوم — يُقبل PNG وJPEG وGIF وWebP فقط')
+
+    const ext = mimeMatch[1].replace('jpeg', 'jpg')
+    const imagesDir = getImagesPath()
+    if (!existsSync(imagesDir)) mkdirSync(imagesDir, { recursive: true })
+    const fileName = `gallery_${itemId}_${Date.now()}.${ext}`
+    const filePath = join(imagesDir, fileName)
+    const data = base64.replace(/^data:image\/\w+;base64,/, '')
+    writeFileSync(filePath, Buffer.from(data, 'base64'))
+    return ItemRepo.addGalleryImage(itemId, fileName)
+  }, ['admin', 'manager'])
+
+  handle('menu:removeGalleryImage', (id: number) => {
+    ItemRepo.removeGalleryImage(id)
   }, ['admin', 'manager'])
 
   // ── Categories ──────────────────

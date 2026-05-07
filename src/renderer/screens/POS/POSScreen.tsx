@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { P } from '../../tokens'
 import { Icon } from '../../components/Icon'
+import { MenuIcon } from '../../components/MenuIcon'
 import { Btn } from '../../components/Btn'
 import { Inp, Sel, Field } from '../../components/Inp'
 import { Modal } from '../../components/Modal'
@@ -274,7 +275,7 @@ export function POSScreen() {
       const receiptData = {
         orderNum: r.order_num || r.id, items: printItems,
         subtotal: sub, discAmount: discAmt, total, payMode,
-        cashIn: payMode === 'cash' ? parseInt(cashIn || '0') : undefined,
+        cashIn: payMode === 'cash' ? parseInt(cashIn || '0') : (payMode === 'split' ? parseInt(cashPart || '0') : undefined),
         cashChange: payMode === 'cash' ? change : undefined,
         bankName: bank || undefined, bankAmount: bankPart || undefined,
         createdAt: r.created_at || new Date().toISOString(),
@@ -330,10 +331,13 @@ export function POSScreen() {
         <div style={{ borderBottom: `1.5px dashed ${P.borderM}`, paddingBottom: 14, marginBottom: 14 }}>
           {receipt.items.map((it: any) => (
             <div key={`${it.itemId ?? it.id}_${it.variationLabel ?? ''}`} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, marginBottom: 8 }}>
-              <div>
-                <span style={{ fontWeight: 700, color: P.plum }}>{it.qty}× {it.name}</span>
-                {it.variationLabel && <div style={{ fontSize: 12, color: P.muted }}>{it.variationLabel}</div>}
-                {it.note && <div style={{ fontSize: 12, color: P.pinkL }}>{it.note}</div>}
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontWeight: 900, color: P.purple, background: P.purpleXL, padding: '2px 6px', borderRadius: 6, fontSize: 13, minWidth: 28, textAlign: 'center' }}>×{it.qty}</span>
+                  <span style={{ fontWeight: 700, color: P.plum, fontSize: 16 }}>{it.name}</span>
+                </div>
+                {it.variationLabel && <div style={{ fontSize: 12, color: P.muted, marginTop: 4, paddingRight: 36 }}>{it.variationLabel}</div>}
+                {it.note && <div style={{ fontSize: 12, color: P.pinkL, marginTop: 4, paddingRight: 36 }}>{it.note}</div>}
               </div>
               <span style={{ color: P.purple, fontWeight: 800, fontSize: 15 }}>{((it.unitPrice || it.price) * it.qty).toLocaleString()}</span>
             </div>
@@ -350,8 +354,8 @@ export function POSScreen() {
           <span style={{ fontSize: 16, fontWeight: 900, color: receipt.orderType === 'takeaway' ? P.gold : P.green }}>{receipt.orderType === 'takeaway' ? 'طلب سفري' : 'طلب محلي'}{receipt.tableNum ? ` · طاولة ${receipt.tableNum}` : ''}</span>
         </div>
         <div style={{ fontSize: 14, color: P.muted, background: P.bg2, borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
-          {receipt.payMode === 'split' ? `نقداً ${parseInt(receipt.cashPart || '0').toLocaleString()} + بنك ${receipt.bankPart.toLocaleString()} ج.س (${receipt.bank})`
-            : receipt.payMode === 'bank' ? `تحويل بنكي · ${receipt.bank} · مرجع: ${receipt.bankRef || '—'}`
+          {receipt.payMode === 'split' ? `مقسّم: نقداً ${parseInt(receipt.cashPart || '0').toLocaleString()} + بنك ${receipt.bankPart.toLocaleString()} ج.س ${receipt.bank ? `(${receipt.bank})` : ''}`
+            : receipt.payMode === 'bank' ? `تحويل بنكي · ${receipt.bank}`
               : `نقداً · الباقي: ${receipt.change.toLocaleString()} ج.س`}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -543,8 +547,8 @@ export function POSScreen() {
                 </div>
                 {cashIn && parseInt(cashIn) >= total && <div style={{ fontSize: 16, color: P.green, marginTop: 8, fontWeight: 900, textAlign: 'center', background: P.greenXL, borderRadius: 10, padding: '10px 0' }}>✓ المبلغ مكتمل</div>}
               </div>}
-              {payMode === 'bank' && <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 7 }}><Sel value={bank} onChange={(e: any) => setBank(e.target.value)} options={banks} /><Inp value={bankRef} onChange={(e: any) => setBankRef(e.target.value)} placeholder="رقم المرجع" /></div>}
-              {payMode === 'split' && <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 7 }}><Inp value={cashPart} onChange={(e: any) => { const v = Math.max(0, Math.min(+e.target.value, total - 1)); setCashPart(String(isNaN(v) ? '' : v)) }} placeholder={`الجزء النقدي (الحد: ${(total - 1).toLocaleString()})`} type="number" max={total - 1} />{cashPart && <div style={{ fontSize: 14, color: P.purple, fontWeight: 700, textAlign: 'center' }}>البنكي: {bankPart.toLocaleString()} ج.س</div>}<Sel value={bank} onChange={(e: any) => setBank(e.target.value)} options={banks} /></div>}
+              {payMode === 'bank' && <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 7 }}><Sel value={bank} onChange={(e: any) => setBank(e.target.value)} options={banks} /><Inp value={bankRef} onChange={(e: any) => setBankRef(e.target.value)} placeholder="رقم العملية (اختياري)" /></div>}
+              {payMode === 'split' && <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 7 }}><Inp value={cashPart} onChange={(e: any) => { const v = Math.max(0, Math.min(+e.target.value, total - 1)); setCashPart(String(isNaN(v) ? '' : v)) }} placeholder={`الجزء النقدي (الحد: ${(total - 1).toLocaleString()})`} type="number" max={total - 1} />{cashPart && <div style={{ fontSize: 14, color: P.purple, fontWeight: 700, textAlign: 'center' }}>البنكي: {bankPart.toLocaleString()} ج.س</div>}<Sel value={bank} onChange={(e: any) => setBank(e.target.value)} options={banks} /><Inp value={bankRef} onChange={(e: any) => setBankRef(e.target.value)} placeholder="رقم العملية (اختياري)" /></div>}
               <div style={{ display: 'flex', gap: 7 }}>
                 <Btn variant="secondary" onClick={() => { setShowPay(false); setPayMode(null); }} style={{ flex: 1 }}>رجوع</Btn>
                 <Btn variant="primary" onClick={confirm} disabled={!payMode || confirming} icon="check" style={{ flex: 2 }}>{confirming ? '...' : 'تأكيد الطلب'}</Btn>
@@ -584,35 +588,37 @@ export function POSScreen() {
         </div>
         {/* Category pills */}
         <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 8 }}>
-          <button onClick={() => { setCatId('all'); setSubcatId(null); }} style={{ padding: '8px 20px', borderRadius: 99, fontSize: 15, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${catId === 'all' ? P.purple : P.borderM}`, background: catId === 'all' ? 'linear-gradient(135deg,#9333ea,#7c3aed)' : P.surface, color: catId === 'all' ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>الكل</button>
+          <button onClick={() => { setCatId('all'); setSubcatId(null); }} className="momo-pill" style={{ padding: '8px 20px', borderRadius: 99, fontSize: 15, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${catId === 'all' ? P.purple : P.borderM}`, background: catId === 'all' ? 'linear-gradient(135deg,#9333ea,#7c3aed)' : P.surface, color: catId === 'all' ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>الكل</button>
           {rootCats.map(c => (
-            <button key={c.id} onClick={() => { setCatId(c.id); setSubcatId(null); }} style={{ padding: '8px 20px', borderRadius: 99, fontSize: 15, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${catId === c.id ? c.color : P.borderM}`, background: catId === c.id ? c.color : P.surface, color: catId === c.id ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>{c.emoji ? c.emoji + ' ' : ''}{c.name}</button>
+            <button key={c.id} onClick={() => { setCatId(c.id); setSubcatId(null); }} className="momo-pill" style={{ padding: '8px 20px', borderRadius: 99, fontSize: 15, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${catId === c.id ? c.color : P.borderM}`, background: catId === c.id ? c.color : P.surface, color: catId === c.id ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>{c.emoji ? c.emoji + ' ' : ''}{c.name}</button>
           ))}
         </div>
         {/* Subcategory pills */}
         {subCats.length > 0 && <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8, paddingRight: 4 }}>
-          <div style={{ fontSize: 11, color: P.faint, display: 'flex', alignItems: 'center', gap: 4, marginLeft: 4 }}><Icon name="layers" size={12} color={P.faint} /> تصنيف فرعي:</div>
-          <button onClick={() => setSubcatId(null)} style={{ padding: '4px 12px', borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: `1px solid ${!subcatId ? activeCat?.color || P.purple : P.borderM}`, background: !subcatId ? `${activeCat?.color || P.purple}15` : 'transparent', color: !subcatId ? activeCat?.color || P.purple : P.muted, fontFamily: 'Tajawal,sans-serif' }}>الكل</button>
+          <div style={{ fontSize: 11, color: P.faint, display: 'flex', alignItems: 'center', gap: 4, marginLeft: 4 }}><Icon name="layers" size={12} color={P.faint} /> فئة فرعية:</div>
+          <button onClick={() => setSubcatId(null)} className="momo-pill" style={{ padding: '4px 12px', borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: `1px solid ${!subcatId ? activeCat?.color || P.purple : P.borderM}`, background: !subcatId ? `${activeCat?.color || P.purple}15` : 'transparent', color: !subcatId ? activeCat?.color || P.purple : P.muted, fontFamily: 'Tajawal,sans-serif' }}>الكل</button>
           {subCats.map((sc: any) => (
-            <button key={sc.id} onClick={() => setSubcatId(sc.id)} style={{ padding: '4px 12px', borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: `1px solid ${subcatId === sc.id ? sc.color : P.borderM}`, background: subcatId === sc.id ? `${sc.color}15` : 'transparent', color: subcatId === sc.id ? sc.color : P.muted, fontFamily: 'Tajawal,sans-serif' }}>{sc.name}</button>
+            <button key={sc.id} onClick={() => setSubcatId(sc.id)} className="momo-pill" style={{ padding: '4px 12px', borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: `1px solid ${subcatId === sc.id ? sc.color : P.borderM}`, background: subcatId === sc.id ? `${sc.color}15` : 'transparent', color: subcatId === sc.id ? sc.color : P.muted, fontFamily: 'Tajawal,sans-serif' }}>{sc.name}</button>
           ))}
         </div>}
         {/* Items grid — scrollable container */}
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 14, alignItems: 'start', padding: '14px 16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 165px)', justifyContent: 'center', gap: 16, padding: '16px' }}>
             {filtered.map(item => (
               <button key={item.id} onClick={() => handleItemClick(item)} className="pos-item-card"
-                style={{ background: P.surface, border: `1.5px solid ${P.border}`, borderRadius: 16, padding: 0, cursor: 'pointer', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden', boxShadow: '0 2px 8px rgba(88,28,135,.06)', fontFamily: 'Tajawal,sans-serif' }}>
-                <div style={{ width: '100%', height: 100, overflow: 'hidden', flexShrink: 0 }}>
-                  {item.image
-                    ? <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e: any) => { e.target.style.display = 'none'; }} />
-                    : <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg,${P.bg3},${P.purpleXL})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 38 }}>{item.emoji || '🍮'}</div>
-                  }
+                style={{ width: 165, background: P.surface, border: `1.5px solid ${P.border}`, borderRadius: 16, padding: 0, cursor: 'pointer', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden', boxShadow: '0 2px 8px rgba(88,28,135,.06)', fontFamily: 'Tajawal,sans-serif' }}>
+                <div style={{ width: '100%', height: 165, overflow: 'hidden', flexShrink: 0, position: 'relative', background: `linear-gradient(135deg,${P.bg3},${P.purpleXL})` }}>
+                  {(item.display_mode === 'image') && item.image_path
+                    ? <img src={item.image_path} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }} onError={(e: any) => { e.target.style.display = 'none'; e.target.nextSibling && (e.target.nextSibling.style.display = 'flex') }} />
+                    : null}
+                  <div style={{ width: '100%', height: '100%', position: (item.display_mode === 'image') && item.image_path ? 'absolute' : 'relative', top: 0, left: 0, display: (item.display_mode === 'image') && item.image_path ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center' }}><MenuIcon id={item.emoji} size={72} style={{ width: 72, height: 72 }} /></div>
                 </div>
-                <div style={{ padding: '8px 10px 12px', width: '100%' }}>
-                  <div style={{ fontSize: 16, color: P.ink, fontWeight: 700, lineHeight: 1.3, marginBottom: 4, textAlign: 'center' }}>{item.name}</div>
-                  {(item.optionGroups || []).length > 0 && <div style={{ fontSize: 12, color: P.muted, marginBottom: 3 }}>متعدد الخيارات</div>}
-                  <div style={{ fontSize: 18, color: P.purple, fontWeight: 900 }}>{item.price.toLocaleString()} <span style={{ fontSize: 12, fontWeight: 400, color: P.faint }}>ج.س</span></div>
+                <div style={{ padding: '10px 10px 12px', width: '100%', height: 90, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div style={{ fontSize: 14.5, color: P.ink, fontWeight: 700, lineHeight: 1.3, textAlign: 'center', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.name}</div>
+                  <div>
+                    {(item.optionGroups || []).length > 0 && <div style={{ fontSize: 11, color: P.muted, marginBottom: 2 }}>متعدد الخيارات</div>}
+                    <div style={{ fontSize: 17, color: P.purple, fontWeight: 900 }}>{item.price.toLocaleString()} <span style={{ fontSize: 11, fontWeight: 600, color: P.faint }}>ج.س</span></div>
+                  </div>
                 </div>
               </button>
             ))}

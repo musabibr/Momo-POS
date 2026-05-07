@@ -61,7 +61,7 @@ export function ExpensesTab({ shift }: { shift: any }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
         <div style={{ fontSize: 16, fontWeight: 800, color: P.plum }}>إجمالي المصروفات: <span style={{ color: P.rose }}>{totalExp.toLocaleString()} ج.س</span></div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <Btn variant="secondary" size="sm" icon="sett" onClick={() => setShowCatMgr(true)}>التصنيفات</Btn>
+          <Btn variant="secondary" size="sm" icon="sett" onClick={() => setShowCatMgr(true)}>الفئات</Btn>
           <Btn variant="primary" icon="plus" onClick={() => setShowAdd(true)}>تسجيل مصروف</Btn>
         </div>
       </div>
@@ -84,7 +84,7 @@ export function ExpensesTab({ shift }: { shift: any }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, fontFamily: 'Tajawal,sans-serif' }}>
             <thead>
               <tr style={{ background: P.bg2, position: 'sticky', top: 0, zIndex: 1 }}>
-                {['م', 'الوقت', 'التصنيف', 'المبلغ', 'الملاحظة', 'الموظف'].map(h => (
+                {['م', 'الوقت', 'الفئة', 'المبلغ', 'الملاحظة', 'الموظف'].map(h => (
                   <th key={h} style={{ padding: '10px 8px', fontSize: 13, fontWeight: 800, color: P.plum, textAlign: 'right', borderBottom: `2px solid ${P.borderM}` }}>{h}</th>
                 ))}
               </tr>
@@ -127,7 +127,7 @@ export function ExpensesTab({ shift }: { shift: any }) {
       {showAdd && (
         <Modal title="تسجيل مصروف" onClose={() => setShowAdd(false)} width={380} icon="cash">
           <Field label="المبلغ (ج.س)" required><Inp value={amount} onChange={(e: any) => setAmount(e.target.value)} type="number" autoFocus /></Field>
-          <Field label="التصنيف">
+          <Field label="الفئة">
             <Sel value={category} onChange={(e: any) => setCategory(e.target.value)} options={cats.map(c => ({ value: c, label: c }))} />
           </Field>
           <Field label="ملاحظة"><Inp value={note} onChange={(e: any) => setNote(e.target.value)} placeholder="وصف المصروف" /></Field>
@@ -140,7 +140,7 @@ export function ExpensesTab({ shift }: { shift: any }) {
 
       {/* Category manager modal */}
       {showCatMgr && (
-        <Modal title="إدارة تصنيفات المصروفات" onClose={() => setShowCatMgr(false)} width={400} icon="sett">
+        <Modal title="إدارة فئات المصروفات" onClose={() => setShowCatMgr(false)} width={400} icon="sett">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
             {cats.map((c, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 14px', background: P.bg2, borderRadius: 8 }}>
@@ -148,10 +148,10 @@ export function ExpensesTab({ shift }: { shift: any }) {
                 <Btn variant="secondary" size="sm" onClick={() => removeCat(i)} style={{ color: P.rose, borderColor: P.roseL }}>حذف</Btn>
               </div>
             ))}
-            {cats.length === 0 && <div style={{ textAlign: 'center', color: P.faint, padding: 20 }}>لا توجد تصنيفات</div>}
+            {cats.length === 0 && <div style={{ textAlign: 'center', color: P.faint, padding: 20 }}>لا توجد فئات</div>}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <Inp value={newCat} onChange={(e: any) => setNewCat(e.target.value)} placeholder="تصنيف جديد…" onKeyDown={(e: any) => e.key === 'Enter' && addCat()} />
+            <Inp value={newCat} onChange={(e: any) => setNewCat(e.target.value)} placeholder="فئة جديدة…" onKeyDown={(e: any) => e.key === 'Enter' && addCat()} />
             <Btn variant="primary" onClick={addCat}>إضافة</Btn>
           </div>
         </Modal>

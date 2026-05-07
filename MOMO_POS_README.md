@@ -1918,3 +1918,6 @@ Build the final installer: npm run build
 When in doubt, read the design file first, then this document.*
 
 *Design bundle: `https://api.anthropic.com/v1/design/h/CGbNb4dTdNo6O54mqcPllg?open_file=Momo+POS.html`*
+<!-- the icon cause an issue in the pos cart it show the placeholder "alt" instead of and icon or image  -->
+<!-- allow the user to choose what to display image or icon
+also add optional product gallary for an item -->

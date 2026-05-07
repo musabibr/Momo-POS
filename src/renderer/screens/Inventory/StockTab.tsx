@@ -95,7 +95,7 @@ export function StockTab() {
         <Inp value={search} onChange={(e:any)=>setSearch(e.target.value)} placeholder="🔍 ابحث…" style={{flex:'1 1 200px',minWidth:150}}/>
         <div style={{display:'flex',gap:4}}>
           {([['all','الكل'],['low','⚠ منخفض'],['good','✓ جيد']] as const).map(([k,l])=>(
-            <button key={k} onClick={()=>setFilter(k)} style={{padding:'6px 14px',borderRadius:99,fontSize:13,fontWeight:filter===k?800:500,border:`1.5px solid ${filter===k?P.purple:P.borderM}`,background:filter===k?P.purple:P.surface,color:filter===k?'#fff':P.muted,cursor:'pointer',fontFamily:'Tajawal,sans-serif',transition:'all .15s'}}>{l}</button>
+            <button key={k} onClick={()=>setFilter(k)} className="momo-pill" style={{padding:'6px 14px',borderRadius:99,fontSize:13,fontWeight:filter===k?800:500,border:`1.5px solid ${filter===k?P.purple:P.borderM}`,background:filter===k?P.purple:P.surface,color:filter===k?'#fff':P.muted,cursor:'pointer',fontFamily:'Tajawal,sans-serif'}}>{l}</button>
           ))}
         </div>
         <Btn variant="secondary" icon="search" onClick={()=>barcodeRef.current?.focus()}>باركود</Btn>
