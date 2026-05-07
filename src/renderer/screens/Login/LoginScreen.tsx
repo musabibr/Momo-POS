@@ -2,97 +2,85 @@ import React, { useState, useEffect, useRef } from 'react'
 import { P } from '../../tokens'
 import { Icon } from '../../components/Icon'
 import { toast } from '../../components/Toast'
+import { Modal } from '../../components/Modal'
+import { Inp, Field } from '../../components/Inp'
+import { Btn } from '../../components/Btn'
 
 const api = (window as any).api
 
-const ROLE_LABELS: Record<string, string> = {
-  admin: 'مسؤول', manager: 'مدير', cashier: 'كاشير', kitchen: 'مطبخ'
-}
-const ROLE_COLORS: Record<string, string> = {
-  admin: P.purple, manager: P.pink, cashier: P.green, kitchen: P.gold
-}
-
 interface LoginScreenProps {
-  onLogin: (employeeId: number, pin: string) => Promise<{ valid: boolean; locked?: boolean; lockedUntil?: string }>
+  onLogin: (username: string, pass: string) => Promise<{ valid: boolean; locked?: boolean; lockedUntil?: string }>
 }
 
 export function LoginScreen({ onLogin }: LoginScreenProps) {
-  const [employees, setEmployees] = useState<any[]>([])
-  const [selected, setSelected] = useState<any>(null)
-  const [pin, setPin] = useState('')
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [now, setNow] = useState(Date.now())
-  const pinRef = useRef<HTMLInputElement>(null)
+  
+  const [showForgot, setShowForgot] = useState(false)
+  const [fUsername, setFUsername] = useState('')
+  const [secQuestion, setSecQuestion] = useState('')
+  const [secAnswer, setSecAnswer] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [forgotStep, setForgotStep] = useState(1) // 1=user, 2=answer
 
-  useEffect(() => {
-    api?.employees?.list?.().then((d: any) => {
-      if (d) setEmployees(d.filter((e: any) => e.active !== 0))
-    })
-  }, [])
-
-  // Tick every second to update lockout countdowns
+  // Tick every second to update lockout countdowns (if any are active globally)
   useEffect(() => {
     const iv = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(iv)
   }, [])
 
-  const isLocked = (emp: any) => {
-    if (!emp.locked_until) return false
-    return new Date(emp.locked_until).getTime() > now
-  }
-
-  const lockRemaining = (emp: any) => {
-    if (!emp.locked_until) return 0
-    return Math.max(0, Math.ceil((new Date(emp.locked_until).getTime() - now) / 1000))
-  }
-
-  const selectEmployee = (emp: any) => {
-    if (isLocked(emp)) {
-      toast(`🔒 ${emp.name} مقفل لمدة ${formatSeconds(lockRemaining(emp))}`)
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    if (!username || !password) {
+      setError('أدخل اسم المستخدم وكلمة المرور')
       return
     }
-    setSelected(emp)
-    setPin('')
-    setError('')
-    setTimeout(() => pinRef.current?.focus(), 100)
-  }
-
-  const handleSubmit = async () => {
-    if (!selected || pin.length < 4) return
     setLoading(true)
     setError('')
-    const result = await onLogin(selected.id, pin)
+    const result = await onLogin(username, password)
     setLoading(false)
+    
     if (result.valid) {
-      // Session is set by the provider; we get unmounted
-      return
+      return // Component unmounts
     }
     if (result.locked) {
-      toast(`🔒 تم قفل الحساب! يرجى المحاولة بعد ${formatSeconds(lockRemaining({ locked_until: result.lockedUntil }))}`)
-      // Refresh employee list to show lockout
-      api?.employees?.list?.().then((d: any) => {
-        if (d) setEmployees(d.filter((e: any) => e.active !== 0))
-      })
-      setSelected(null)
+      const lockRemaining = Math.max(0, Math.ceil((new Date(result.lockedUntil!).getTime() - Date.now()) / 1000))
+      setError(`تم قفل الحساب! المحاولة بعد ${formatSeconds(lockRemaining)}`)
     } else {
-      setError('رمز PIN خاطئ')
-      setPin('')
-      pinRef.current?.focus()
+      setError('اسم المستخدم أو كلمة المرور خاطئة')
+      setPassword('')
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSubmit()
-    if (e.key === 'Escape') { setSelected(null); setPin(''); setError('') }
-  }
-
-  const handlePadPress = (digit: string) => {
-    if (digit === 'clear') { setPin(''); setError(''); return }
-    if (digit === 'back') { setPin(p => p.slice(0, -1)); return }
-    if (pin.length >= 8) return
-    const newPin = pin + digit
-    setPin(newPin)
+  const handleForgotSubmit = async () => {
+    if (forgotStep === 1) {
+      if (!fUsername) { toast('أدخل اسم المستخدم'); return }
+      const q = await api?.employees?.getSecurityQuestion?.(fUsername)
+      if (q) {
+        setSecQuestion(q)
+        setForgotStep(2)
+      } else {
+        toast('المستخدم غير موجود أو لا يملك سؤال أمان')
+      }
+    } else if (forgotStep === 2) {
+      if (!secAnswer || newPassword.length < 4) { toast('أدخل الإجابة وكلمة مرور جديدة (4 خانات على الأقل)'); return }
+      const success = await api?.employees?.resetPasswordWithSecurityAnswer?.(fUsername, secAnswer, newPassword)
+      if (success) {
+        toast('✓ تم إعادة تعيين كلمة المرور بنجاح')
+        setShowForgot(false)
+        setForgotStep(1)
+        setFUsername('')
+        setSecAnswer('')
+        setNewPassword('')
+        setUsername(fUsername)
+        setPassword('')
+      } else {
+        toast('الإجابة خاطئة')
+      }
+    }
   }
 
   return (
@@ -122,154 +110,103 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
         </div>
       </div>
 
-      {selected ? (
-        /* ── PIN Entry ────────────────────────────────── */
-        <div style={{
-          background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(24px)',
-          borderRadius: 24, padding: '36px 32px 28px', width: 340,
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '0 24px 64px rgba(0,0,0,.35)',
-          position: 'relative', zIndex: 1
-        }}>
-          {/* Back button */}
-          <button onClick={() => { setSelected(null); setPin(''); setError('') }}
-            style={{ position: 'absolute', top: 14, left: 14, background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="chevR" size={16} color="rgba(255,255,255,0.5)" />
-          </button>
+      <div style={{
+        background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(24px)',
+        borderRadius: 24, padding: '36px 32px 28px', width: 340,
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 24px 64px rgba(0,0,0,.35)',
+        position: 'relative', zIndex: 1
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>تسجيل الدخول</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>أدخل اسم المستخدم وكلمة المرور</div>
+        </div>
 
-          {/* Avatar */}
-          <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <div style={{
-              width: 64, height: 64, borderRadius: '50%', margin: '0 auto 12px',
-              background: `${ROLE_COLORS[selected.role]}25`,
-              border: `2.5px solid ${ROLE_COLORS[selected.role]}60`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 26, fontWeight: 900, color: ROLE_COLORS[selected.role]
-            }}>{selected.name?.[0] || '?'}</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{selected.name}</div>
-            <span style={{
-              display: 'inline-block', marginTop: 6, padding: '2px 12px', borderRadius: 99,
-              fontSize: 12, fontWeight: 700,
-              background: `${ROLE_COLORS[selected.role]}20`, color: ROLE_COLORS[selected.role]
-            }}>{ROLE_LABELS[selected.role] || selected.role}</span>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>اسم المستخدم</label>
+            <input 
+              value={username} 
+              onChange={e => setUsername(e.target.value)} 
+              autoFocus 
+              placeholder="اسم المستخدم"
+              style={{
+                width: '100%', height: 44, padding: '0 14px', borderRadius: 10,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                color: '#fff', fontSize: 15, outline: 'none', fontFamily: 'Tajawal, sans-serif'
+              }}
+            />
           </div>
 
-          {/* PIN dots */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 8 }}>
-            {[0,1,2,3].map(i => (
-              <div key={i} style={{
-                width: 14, height: 14, borderRadius: '50%',
-                background: i < pin.length ? ROLE_COLORS[selected.role] : 'rgba(255,255,255,0.12)',
-                border: `1.5px solid ${i < pin.length ? ROLE_COLORS[selected.role] : 'rgba(255,255,255,0.2)'}`,
-                transition: 'all .15s',
-                boxShadow: i < pin.length ? `0 0 8px ${ROLE_COLORS[selected.role]}50` : 'none'
-              }} />
-            ))}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>كلمة المرور</label>
+            <input 
+              type="password" 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              placeholder="••••••••"
+              style={{
+                width: '100%', height: 44, padding: '0 14px', borderRadius: 10,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                color: '#fff', fontSize: 15, outline: 'none', fontFamily: 'Tajawal, sans-serif', letterSpacing: 3
+              }}
+            />
           </div>
 
-          {/* Hidden real input for keyboard entry */}
-          <input
-            ref={pinRef} value={pin} onChange={e => { setPin(e.target.value.replace(/\D/g, '').slice(0, 8)); setError('') }}
-            onKeyDown={handleKeyDown} type="password" autoFocus
-            style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
-          />
+          <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 16 }}>
+            <button type="button" onClick={() => setShowForgot(true)} style={{ background: 'none', border: 'none', color: '#db2777', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+              نسيت كلمة المرور؟
+            </button>
+          </div>
 
-          {/* Error message */}
           {error && (
-            <div style={{ textAlign: 'center', fontSize: 13, color: '#f87171', fontWeight: 700, marginBottom: 8, marginTop: 4 }}>{error}</div>
+            <div style={{ textAlign: 'center', fontSize: 13, color: '#f87171', fontWeight: 700, marginBottom: 12 }}>{error}</div>
           )}
 
-          {/* Numpad */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 16 }}>
-            {['1','2','3','4','5','6','7','8','9','clear','0','back'].map(key => (
-              <button key={key}
-                onClick={() => key === 'clear' || key === 'back' ? handlePadPress(key) : handlePadPress(key)}
-                style={{
-                  height: 52, borderRadius: 12, border: 'none', fontSize: key === 'clear' || key === 'back' ? 13 : 20,
-                  fontWeight: 700, cursor: 'pointer',
-                  background: key === 'clear' ? 'rgba(248,113,113,0.15)' : key === 'back' ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.08)',
-                  color: key === 'clear' ? '#f87171' : key === 'back' ? 'rgba(255,255,255,0.5)' : '#fff',
-                  fontFamily: 'Tajawal, sans-serif',
-                  transition: 'background .12s'
-                }}
-                onMouseDown={e => (e.currentTarget.style.background = 'rgba(147,51,234,0.25)')}
-                onMouseUp={e => (e.currentTarget.style.background = key === 'clear' ? 'rgba(248,113,113,0.15)' : key === 'back' ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.08)')}
-              >
-                {key === 'clear' ? 'مسح' : key === 'back' ? '←' : key}
-              </button>
-            ))}
-          </div>
-
-          {/* Submit */}
-          <button onClick={handleSubmit} disabled={pin.length < 4 || loading}
+          <button type="submit" disabled={!username || !password || loading}
             style={{
-              width: '100%', height: 48, marginTop: 16, borderRadius: 12, border: 'none',
-              background: pin.length >= 4 ? 'linear-gradient(135deg,#9333ea,#db2777)' : 'rgba(255,255,255,0.06)',
-              color: pin.length >= 4 ? '#fff' : 'rgba(255,255,255,0.3)',
-              fontSize: 16, fontWeight: 800, cursor: pin.length >= 4 ? 'pointer' : 'default',
+              width: '100%', height: 48, borderRadius: 12, border: 'none',
+              background: username && password ? 'linear-gradient(135deg,#9333ea,#db2777)' : 'rgba(255,255,255,0.06)',
+              color: username && password ? '#fff' : 'rgba(255,255,255,0.3)',
+              fontSize: 16, fontWeight: 800, cursor: username && password ? 'pointer' : 'default',
               fontFamily: 'Tajawal, sans-serif',
-              boxShadow: pin.length >= 4 ? '0 8px 24px rgba(147,51,234,.35)' : 'none',
+              boxShadow: username && password ? '0 8px 24px rgba(147,51,234,.35)' : 'none',
               transition: 'all .2s'
             }}>
             {loading ? 'جاري التحقق…' : 'تسجيل الدخول'}
           </button>
-        </div>
-      ) : (
-        /* ── Employee Grid ──────────────────────────── */
-        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', width: '100%', maxWidth: 560 }}>
-          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', marginBottom: 20, fontWeight: 600 }}>
-            اختر موظفاً لتسجيل الدخول
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, padding: '0 16px' }}>
-            {employees.map(emp => {
-              const locked = isLocked(emp)
-              const rc = ROLE_COLORS[emp.role] || P.muted
-              return (
-                <button key={emp.id}
-                  onClick={() => selectEmployee(emp)}
-                  style={{
-                    padding: '20px 12px 16px', borderRadius: 18, border: 'none',
-                    background: locked ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)',
-                    cursor: locked ? 'not-allowed' : 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-                    opacity: locked ? 0.45 : 1,
-                    transition: 'all .2s', fontFamily: 'Tajawal, sans-serif',
-                    boxShadow: '0 4px 20px rgba(0,0,0,.15)'
-                  }}
-                  onMouseEnter={e => { if (!locked) e.currentTarget.style.background = 'rgba(147,51,234,0.12)' }}
-                  onMouseLeave={e => { if (!locked) e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
-                >
-                  <div style={{
-                    width: 52, height: 52, borderRadius: '50%',
-                    background: `${rc}20`, border: `2px solid ${rc}50`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 22, fontWeight: 900, color: rc
-                  }}>
-                    {locked ? <Icon name="lock" size={20} color={rc} /> : (emp.name?.[0] || '?')}
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{emp.name}</div>
-                  <span style={{
-                    padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700,
-                    background: `${rc}18`, color: rc
-                  }}>
-                    {locked ? `مقفل ${formatSeconds(lockRemaining(emp))}` : ROLE_LABELS[emp.role] || emp.role}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-          {employees.length === 0 && (
-            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 15, marginTop: 30 }}>
-              لا يوجد موظفون — يرجى إنشاء موظف من معالج الإعداد
+        </form>
+      </div>
+
+      <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', fontSize: 11, color: 'rgba(255,255,255,0.2)', fontWeight: 500 }}>
+        Momo POS v1.0 · آمن · يعتمد على الصلاحيات الفردية
+      </div>
+
+      {showForgot && (
+        <Modal title="استعادة كلمة المرور" width={380} icon="lock" onClose={() => { setShowForgot(false); setForgotStep(1) }}>
+          {forgotStep === 1 ? (
+            <div>
+              <Field label="اسم المستخدم">
+                <Inp value={fUsername} onChange={(e: any) => setFUsername(e.target.value)} autoFocus placeholder="أدخل اسم المستخدم الخاص بك" />
+              </Field>
+              <Btn fullWidth onClick={handleForgotSubmit}>متابعة</Btn>
+            </div>
+          ) : (
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: P.plum, marginBottom: 12, padding: 12, background: P.bg2, borderRadius: 8 }}>
+                ❓ {secQuestion}
+              </div>
+              <Field label="الإجابة">
+                <Inp value={secAnswer} onChange={(e: any) => setSecAnswer(e.target.value)} autoFocus placeholder="أدخل إجابة سؤال الأمان" />
+              </Field>
+              <Field label="كلمة المرور الجديدة">
+                <Inp value={newPassword} type="password" onChange={(e: any) => setNewPassword(e.target.value)} placeholder="أدخل كلمة مرور جديدة" />
+              </Field>
+              <Btn fullWidth onClick={handleForgotSubmit}>إعادة تعيين</Btn>
             </div>
           )}
-        </div>
+        </Modal>
       )}
-
-      {/* Bottom version tag */}
-      <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', fontSize: 11, color: 'rgba(255,255,255,0.2)', fontWeight: 500 }}>
-        Momo POS v1.0 · غير متصل · آمن
-      </div>
     </div>
   )
 }

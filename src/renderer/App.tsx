@@ -15,6 +15,7 @@ import { SetupWizard } from './screens/Setup/SetupWizard'
 import { KitchenConsole } from './screens/Kitchen/KitchenConsole'
 import { TransactionsScreen } from './screens/Transactions/TransactionsScreen'
 import { LoginScreen } from './screens/Login/LoginScreen'
+import { UsersScreen } from './screens/Users/UsersScreen'
 import { SessionProvider, useSession } from './hooks/useSession'
 import { useInactivityLock } from './hooks/useInactivityLock'
 import { useViewport } from './ds/useViewport'
@@ -43,12 +44,12 @@ function AppInner() {
   // Reset to default screen for the role when session changes
   useEffect(() => {
     if (session) {
-      const allowed = navForRole(session.role)
-      if (allowed.length > 0 && !allowed.find(n => n.id === active)) {
+      const allowed = navForRole(session.role, session.permissions)
+      if (allowed.length > 0 && !allowed.find((n: any) => n.id === active)) {
         setActive(allowed[0].id)
       }
     }
-  }, [session?.role])
+  }, [session?.role, session?.permissions])
 
   function renderScreen() {
     if (!session) return null
@@ -62,6 +63,7 @@ function AppInner() {
       case 'procurement': return <ProcurementScreen />
       case 'insights':    return <ReportsScreen />
       case 'setup':       return <SettingsScreen />
+      case 'users':       return <UsersScreen />
       case 'kitchen':     return <KitchenConsole />
     }
   }
@@ -93,7 +95,7 @@ function AppInner() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', direction: 'rtl', fontFamily: 'Tajawal, sans-serif', background: P.bg }}>
-      <Sidebar active={active} onChange={setActive} collapsed={collapsed} role={session.role} employee={session.employee} onLogout={logout} />
+      <Sidebar active={active} onChange={setActive} collapsed={collapsed} role={session.role} permissions={session.permissions} employee={session.employee} onLogout={logout} />
       <main
         style={{
           flex: 1,

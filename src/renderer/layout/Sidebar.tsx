@@ -13,13 +13,14 @@ interface SidebarProps {
   active: Screen
   onChange: (s: Screen) => void
   collapsed?: boolean
-  role: Role
+  role: string
+  permissions?: string[]
   employee?: { id: number; name: string; role: string }
   onLogout?: () => void
 }
 
-export function Sidebar({ active, onChange, collapsed, role, employee, onLogout }: SidebarProps) {
-  const visibleNav = navForRole(role)
+export function Sidebar({ active, onChange, collapsed, role, permissions, employee, onLogout }: SidebarProps) {
+  const visibleNav = navForRole(role, permissions)
 
   return (
     <div className="app-sidebar sidebar-grad" style={{

@@ -4,14 +4,18 @@ import { EmployeeRepo } from '../../db/repositories/EmployeeRepo'
 import { ActionLogRepo } from '../../db/repositories/ActionLogRepo'
 
 export function registerSessionHandlers() {
-  handle('session:login', (employeeId: number, pin: string) => {
-    const result = EmployeeRepo.verifyPin(employeeId, pin)
+  handle('session:login', (username: string, pass: string) => {
+    const result = EmployeeRepo.login(username, pass)
     if (!result.valid) return result
-    const emp = EmployeeRepo.getById(employeeId) as any
+    const emp = result.employee
     if (!emp) return { valid: false }
-    const session: Session = { employeeId: emp.id, name: emp.name, role: emp.role }
+    
+    let permissions = []
+    try { permissions = JSON.parse(emp.permissions) } catch {}
+
+    const session: Session = { employeeId: emp.id, name: emp.name, role: emp.role, permissions }
     setSession(session)
-    ActionLogRepo.write('SESSION_LOGIN', JSON.stringify({ employeeId: emp.id, name: emp.name }), emp.id)
+    ActionLogRepo.write('SESSION_LOGIN', JSON.stringify({ employeeId: emp.id, name: emp.name, username }), emp.id)
     return { valid: true, employee: emp }
   })
 

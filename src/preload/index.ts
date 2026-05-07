@@ -20,7 +20,7 @@ function invokeRaw(channel: string, ...args: any[]) {
 const api = {
   // ── SESSION ──────────────────────────────────────────────────────
   session: {
-    login: (employeeId: number, pin: string) => invokeRaw('session:login', employeeId, pin),
+    login: (username: string, pass: string) => invokeRaw('session:login', username, pass),
     logout: () => invoke('session:logout'),
     current: () => invokeRaw('session:current'),
   },
@@ -149,7 +149,9 @@ const api = {
     create: (data: any) => invoke('employees:create', data),
     update: (id: number, data: any) => invoke('employees:update', id, data),
     delete: (id: number) => invoke('employees:delete', id),
-    verifyPin: (id: number, pin: string) => invokeRaw('employees:verifyPin', id, pin),
+    login: (username: string, pass: string) => invokeRaw('employees:login', username, pass),
+    getSecurityQuestion: (username: string) => invokeRaw('employees:getSecurityQuestion', username),
+    resetPasswordWithSecurityAnswer: (username: string, answer: string, newPassword: string) => invokeRaw('employees:resetPasswordWithSecurityAnswer', username, answer, newPassword),
     verifyAnyManagerPin: (pin: string) => invokeRaw('employees:verifyAnyManagerPin', pin),
     unlock: (id: number) => invoke('employees:unlock', id)
   },

@@ -37,6 +37,7 @@ export type Screen =
   | 'procurement'  // المشتريات — suppliers + purchase orders (admin/manager)
   | 'insights'     // التقارير — analytics, no audit
   | 'setup'        // الإعدادات — branding + banks + printers + backup + employees + RBAC + audit
+  | 'users'        // الموظفون — user management
   | 'kitchen'      // المطبخ — kitchen role landing screen
 
 export type Role = 'admin' | 'manager' | 'cashier' | 'kitchen'
@@ -48,26 +49,29 @@ export interface NavSlot {
   accent: string
   /** Roles allowed to see this slot in the sidebar. */
   roles: readonly Role[]
+  perm?: string
 }
 
 export const NAV: readonly NavSlot[] = [
-  { id: 'pos',         label: 'نقطة البيع',  icon: 'pos',    accent: P.pink,    roles: ['admin', 'manager', 'cashier'] },
-  { id: 'transactions',label: 'المعاملات',   icon: 'note',   accent: P.blue,    roles: ['admin', 'manager', 'cashier'] },
-  { id: 'shift',       label: 'الوردية',     icon: 'cash',   accent: P.green,   roles: ['admin', 'manager', 'cashier'] },
-  { id: 'catalog',     label: 'القائمة',     icon: 'menu',   accent: P.purple,  roles: ['admin', 'manager'] },
-  { id: 'stock',       label: 'المخزون',     icon: 'inv',    accent: '#7c3aed', roles: ['admin', 'manager'] },
-  { id: 'kitchen',     label: 'المطبخ',      icon: 'box',    accent: P.gold,    roles: ['admin', 'manager'] },
-  { id: 'cust',        label: 'العملاء',     icon: 'cust',   accent: P.pink,    roles: ['admin', 'manager'] },
-  { id: 'procurement', label: 'المشتريات',   icon: 'usb',    accent: P.gold,    roles: ['admin', 'manager'] },
-  { id: 'insights',    label: 'التقارير',    icon: 'rep',    accent: '#4f46e5', roles: ['admin', 'manager'] },
-  { id: 'setup',       label: 'الإعدادات',   icon: 'sett',   accent: P.muted,   roles: ['admin'] },
+  { id: 'pos',         label: 'نقطة البيع',  icon: 'pos',    accent: P.pink,    roles: ['admin', 'manager', 'cashier'], perm: 'pos_access' },
+  { id: 'transactions',label: 'المعاملات',   icon: 'note',   accent: P.blue,    roles: ['admin', 'manager', 'cashier'], perm: 'transactions_view' },
+  { id: 'shift',       label: 'الوردية',     icon: 'cash',   accent: P.green,   roles: ['admin', 'manager', 'cashier'], perm: 'shift_manage' },
+  { id: 'catalog',     label: 'القائمة',     icon: 'menu',   accent: P.purple,  roles: ['admin', 'manager'], perm: 'menu_manage' },
+  { id: 'stock',       label: 'المخزون',     icon: 'inv',    accent: '#7c3aed', roles: ['admin', 'manager'], perm: 'inventory_manage' },
+  { id: 'kitchen',     label: 'المطبخ',      icon: 'box',    accent: P.gold,    roles: ['admin', 'manager'], perm: 'kitchen_view' },
+  { id: 'cust',        label: 'العملاء',     icon: 'cust',   accent: P.pink,    roles: ['admin', 'manager'], perm: 'customers_manage' },
+  { id: 'procurement', label: 'المشتريات',   icon: 'usb',    accent: P.gold,    roles: ['admin', 'manager'], perm: 'purchase_manage' },
+  { id: 'insights',    label: 'التقارير',    icon: 'rep',    accent: '#4f46e5', roles: ['admin', 'manager'], perm: 'reports_view' },
+  { id: 'users',       label: 'الموظفون',    icon: 'user',   accent: P.rose,    roles: ['admin'], perm: 'users_manage' },
+  { id: 'setup',       label: 'الإعدادات',   icon: 'sett',   accent: P.muted,   roles: ['admin'], perm: 'settings_manage' },
 ] as const
 
-/** Filter NAV by current session role. Kitchen role is handled separately
+/** Filter NAV by current session permissions. Kitchen role is handled separately
  *  (lands on KitchenConsole, no sidebar). */
-export function navForRole(role: Role): NavSlot[] {
+export function navForRole(role: string, perms: string[] = []): NavSlot[] {
   if (role === 'kitchen') return []
-  return NAV.filter(n => n.roles.includes(role))
+  if (perms.includes('*')) return NAV as any
+  return NAV.filter((n: any) => perms.includes(n.perm))
 }
 
 export const IC: Record<string, string> = {

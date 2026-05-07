@@ -78,13 +78,21 @@ export const createOrderSchema = z.object({
 export const createEmployeeSchema = z.object({
   name: z.string().min(1, 'اسم الموظف مطلوب'),
   role: z.enum(['admin', 'manager', 'cashier', 'kitchen']),
-  pin: z.string().min(4, 'PIN يجب أن يكون 4 أرقام على الأقل'),
+  username: z.string().min(3, 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل').regex(/^[a-zA-Z0-9_]+$/, 'يجب أن يحتوي اسم المستخدم على أحرف إنجليزية وأرقام فقط'),
+  password: z.string().min(4, 'كلمة المرور يجب أن تكون 4 خانات على الأقل'),
+  permissions: z.array(z.string()).optional(),
+  securityQuestion: z.string().optional().nullable(),
+  securityAnswer: z.string().optional().nullable(),
 })
 
 export const updateEmployeeSchema = z.object({
   name: z.string().min(1).optional(),
   role: z.enum(['admin', 'manager', 'cashier', 'kitchen']).optional(),
-  pin: z.string().min(4).optional(),
+  username: z.string().min(3).regex(/^[a-zA-Z0-9_]+$/).optional(),
+  password: z.string().min(4).optional(),
+  permissions: z.array(z.string()).optional(),
+  securityQuestion: z.string().optional().nullable(),
+  securityAnswer: z.string().optional().nullable(),
   active: z.boolean().optional(),
 })
 

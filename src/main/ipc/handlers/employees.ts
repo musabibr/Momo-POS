@@ -15,7 +15,9 @@ export function registerEmployeeHandlers() {
     return EmployeeRepo.update(id, validated)
   }, ['admin'])
   handle('employees:delete', (id: number) => EmployeeRepo.delete(id), ['admin'])
-  handle('employees:verifyPin', (id: number, pin: string) => EmployeeRepo.verifyPin(id, pin))
+  handle('employees:login', (username: string, pass: string) => EmployeeRepo.login(username, pass))
+  handle('employees:getSecurityQuestion', (username: string) => EmployeeRepo.getSecurityQuestion(username))
+  handle('employees:resetPasswordWithSecurityAnswer', (username: string, answer: string, newPassword: string) => EmployeeRepo.resetPasswordWithSecurityAnswer(username, answer, newPassword))
   handle('employees:verifyAnyManagerPin', (pin: string) => EmployeeRepo.verifyAnyManagerPin(pin))
   handle('employees:unlock', (id: number) => EmployeeRepo.unlockEmployee(id), ['admin'])
 }

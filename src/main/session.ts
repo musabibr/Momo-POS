@@ -9,7 +9,8 @@
 export interface Session {
   employeeId: number
   name: string
-  role: 'admin' | 'manager' | 'cashier' | 'kitchen'
+  role: 'admin' | 'manager' | 'cashier' | 'kitchen' | string
+  permissions: string[]
 }
 
 let currentSession: Session | null = null

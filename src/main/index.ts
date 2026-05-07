@@ -40,8 +40,9 @@ app.whenReady().then(() => {
   // Initialize database
   initDatabase()
   runMigrations()
-  runSeed()
-  runDemoData()
+  // Seeding is now handled by migration 015_seed_demo.sql
+  // runSeed()
+  // runDemoData()
 
   // Register IPC handlers
   registerAllIpc()

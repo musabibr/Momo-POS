@@ -7,11 +7,7 @@ import { TabBar, Badge } from '../../components/TabBar'
 import { Icon } from '../../components/Icon'
 import { Card } from '../../components/Card'
 import { toast } from '../../components/Toast'
-import { ScrollableTabs, ResponsiveTable, CardGrid } from '../../components/layouts'
-
-// Role display map — moved from the dissolved ShiftsScreen.
-const ROLES: Record<string, string> = { admin: 'مسؤول', manager: 'مدير', cashier: 'كاشير', kitchen: 'مطبخ' }
-const ROLE_COLOR: Record<string, string> = { admin: P.purple, manager: P.pink, cashier: P.green, kitchen: P.gold }
+import { ScrollableTabs, ResponsiveTable } from '../../components/layouts'
 
 const api = (window as any).api
 
@@ -31,11 +27,8 @@ export function SettingsScreen() {
         { id: 'banks', label: 'البنوك' },
         { id: 'print', label: 'الطابعات' },
         { id: 'loyalty', label: 'الولاء' },
-        { id: 'employees', label: 'الموظفون' },
-        { id: 'roles', label: 'الأدوار والصلاحيات' },
         { id: 'shiftHistory', label: 'سجل الورديات' },
-        { id: 'bkp', label: 'النسخ الاحتياطي' },
-        { id: 'sys', label: 'النظام' }
+        { id: 'bkp', label: 'النسخ الاحتياطي' }
       ]} active={tab} onChange={setTab} />
 
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
@@ -44,11 +37,8 @@ export function SettingsScreen() {
         {tab === 'banks' && <BanksTab />}
         {tab === 'print' && <PrintTab />}
         {tab === 'loyalty' && <LoyaltyTab />}
-        {tab === 'employees' && <EmployeesTab />}
-        {tab === 'roles' && <RolesTab />}
         {tab === 'shiftHistory' && <ShiftHistoryTab />}
         {tab === 'bkp' && <BackupTab />}
-        {tab === 'sys' && <SystemTab />}
       </div>
     </div>
   )
@@ -331,6 +321,10 @@ function BackupTab() {
   const [backing, setBacking] = useState(false)
   const [schedule, setSchedule] = useState('shift')
 
+  const [showReset, setShowReset] = useState(false)
+  const [resetPin, setResetPin] = useState('')
+  const [confirmReset, setConfirmReset] = useState(false)
+
   useEffect(() => {
     api?.settings?.getAll?.().then((s: any) => {
       if (!s) return
@@ -359,6 +353,18 @@ function BackupTab() {
     setBacking(false)
   }
 
+  async function resetData() {
+    try {
+      const r = await api?.employees?.verifyAnyManagerPin?.(resetPin)
+      if (!r?.valid) { toast('كلمة المرور خاطئة أو ليس لديك صلاحية مدير'); setResetPin(''); return }
+      if (!confirmReset) { setConfirmReset(true); return }
+      await api?.backup?.preFlightSnapshot?.('factoryReset')
+      await api?.settings?.factoryReset?.()
+      toast('تم إعادة ضبط المصنع — سيتم إعادة التشغيل')
+      setShowReset(false); setResetPin(''); setConfirmReset(false)
+    } catch { toast('خطأ في إعادة الضبط') }
+  }
+
   return (
     <div style={{ maxWidth: 440, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <Card style={{ padding: 18 }}>
@@ -379,69 +385,8 @@ function BackupTab() {
           <div style={{ fontWeight: 700, fontSize: 14, color: P.plum }}>استعادة من ملف</div>
         </div>
       </div>
-    </div>
-  )
-}
 
-function SystemTab() {
-  const [info, setInfo] = useState<any>({})
-  const [showReset, setShowReset] = useState(false)
-  const [resetPin, setResetPin] = useState('')
-  const [confirmReset, setConfirmReset] = useState(false)
-  const [lockedEmps, setLockedEmps] = useState<any[]>([])
-
-  useEffect(() => {
-    api?.settings?.getAll?.().then((s: any) => s && setInfo(s))
-    api?.employees?.list?.().then((d: any) => {
-      if (d) setLockedEmps(d.filter((e: any) => e.locked_until && new Date(e.locked_until) > new Date()))
-    })
-  }, [])
-
-  async function resetData() {
-    try {
-      const r = await api?.employees?.verifyAnyManagerPin?.(resetPin)
-      if (!r?.valid) { toast('رمز PIN خاطئ أو ليس لديك صلاحية مدير'); setResetPin(''); return }
-      if (!confirmReset) { setConfirmReset(true); return }
-      await api?.backup?.preFlightSnapshot?.('factoryReset')
-      await api?.settings?.factoryReset?.()
-      toast('تم إعادة ضبط المصنع — سيتم إعادة التشغيل')
-      setShowReset(false); setResetPin(''); setConfirmReset(false)
-    } catch { toast('خطأ في إعادة الضبط') }
-  }
-
-  async function unlockEmployee(id: number) {
-    await api?.employees?.update?.(id, { locked_until: null })
-    toast('تم فتح قفل الموظف ✓')
-    setLockedEmps(p => p.filter(e => e.id !== id))
-  }
-
-  return (
-    <div style={{ maxWidth: 440, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <Card style={{ padding: 18 }}>
-        {[
-          { l: 'الإصدار', v: info.app_version || '1.0.0' },
-          { l: 'إصدار قاعدة البيانات', v: info.schema_version || '001' },
-          { l: 'محرك قاعدة البيانات', v: 'SQLite 3' },
-          { l: 'الوضع', v: 'غير متصل بالإنترنت' }
-        ].map((f, i) => (
-          <div key={f.l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, padding: '9px 0', borderBottom: i < 3 ? `1px solid ${P.ghost}` : 'none' }}>
-            <span style={{ color: P.muted }}>{f.l}</span><span style={{ color: P.plum, fontFamily: 'monospace', fontWeight: 700 }}>{f.v}</span>
-          </div>
-        ))}
-      </Card>
-
-      {/* PIN unlock tool */}
-      {lockedEmps.length > 0 && <Card style={{ padding: 18, marginBottom: 12 }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: P.gold, marginBottom: 10 }}>🔒 موظفون مقفلون</div>
-        {lockedEmps.map(e => (
-          <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: `1px solid ${P.border}` }}>
-            <span style={{ fontSize: 14, color: P.plum, fontWeight: 700 }}>{e.name} — مقفل حتى {new Date(e.locked_until).toLocaleTimeString('ar-SA')}</span>
-            <Btn variant="secondary" size="sm" onClick={() => unlockEmployee(e.id)}>فتح القفل</Btn>
-          </div>
-        ))}
-      </Card>}
-
-      <div style={{ background: '#fff7f7', border: `1.5px solid ${P.roseL}`, borderRadius: 14, padding: 18 }}>
+      <div style={{ background: '#fff7f7', border: `1.5px solid ${P.roseL}`, borderRadius: 14, padding: 18, marginTop: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}><Icon name="alert" size={17} color={P.rose} /><span style={{ fontWeight: 800, color: P.rose, fontSize: 15 }}>منطقة الخطر</span></div>
         <div style={{ fontSize: 14, color: P.rose, marginBottom: 14 }}>مسح وتصفير قواعد البيانات. يتم أخذ نسخة احتياطية تلقائياً قبل المسح.</div>
         <Btn variant="danger" onClick={() => { setShowReset(true); setConfirmReset(false) }}>إعادة ضبط المصنع</Btn>
@@ -453,195 +398,15 @@ function SystemTab() {
           <div style={{ fontSize: 16, fontWeight: 800, color: P.plum, marginBottom: 7 }}>{confirmReset ? '⚠️ تأكيد نهائي — لا يمكن التراجع!' : 'هل أنت متأكد تماماً؟'}</div>
           <div style={{ fontSize: 14, color: P.muted }}>{confirmReset ? 'اضغط مرة أخرى لتأكيد المسح النهائي' : 'سيتم مسح جميع بيانات المطعم والطلبات.'}</div>
         </div>
-        <Field label="أدخل رمز PIN لمدير لتأكيد الإجراء"><Inp type="password" value={resetPin} onChange={(e: any) => setResetPin(e.target.value)} autoFocus /></Field>
+        <Field label="أدخل كلمة مرور المدير لتأكيد الإجراء"><Inp type="password" value={resetPin} onChange={(e: any) => setResetPin(e.target.value)} autoFocus /></Field>
         <div style={{ display: 'flex', gap: 10 }}><Btn variant="secondary" onClick={() => setShowReset(false)} style={{ flex: 1 }}>إلغاء</Btn><Btn variant="danger" onClick={resetData} style={{ flex: 1 }}>{confirmReset ? '🗑️ تأكيد المسح النهائي' : 'نعم، مسح البيانات'}</Btn></div>
       </Modal>
+
     </div>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// EMPLOYEES — absorbed from the dissolved ShiftsScreen
-// ─────────────────────────────────────────────────────────────────────
 
-function EmployeesTab() {
-  const [emps, setEmps] = useState<any[]>([])
-  const [showAdd, setShowAdd] = useState<any>(null)
-
-  const load = () => api?.employees?.list?.().then((d: any) => d && setEmps(d))
-  useEffect(() => { load() }, [])
-
-  const toggleClock = async (emp: any) => {
-    const newStatus = !emp.active
-    await api?.employees?.update?.(emp.id, { active: newStatus })
-    toast(newStatus ? `تم تسجيل حضور ${emp.name}` : `تم انصراف ${emp.name}`)
-    load()
-  }
-
-  const deleteEmp = async (id: number) => {
-    await api?.employees?.delete?.(id)
-    toast('تم الحذف')
-    load()
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-        <div style={{ fontSize: 14, color: P.muted, fontWeight: 700 }}>{emps.length} موظف · {emps.filter(e => e.active).length} نشط الآن</div>
-        <Btn variant="primary" icon="plus" onClick={() => setShowAdd({})}>إضافة موظف</Btn>
-      </div>
-      <CardGrid min={260}>
-        {emps.map(e => (
-          <Card key={e.id} style={{ padding: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 11 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
-                <div style={{ width: 44, height: 44, borderRadius: '50%', background: `${ROLE_COLOR[e.role]}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800, color: ROLE_COLOR[e.role], flexShrink: 0 }}>{e.name?.[0] || 'U'}</div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: P.plum, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</div>
-                  <span style={{ background: `${ROLE_COLOR[e.role]}15`, color: ROLE_COLOR[e.role], padding: '2px 8px', borderRadius: 99, fontSize: 12, fontWeight: 700 }}>{ROLES[e.role] || e.role}</span>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                <Icon name="edit" size={14} color={P.muted} onClick={() => setShowAdd(e)} />
-                <Icon name="del" size={14} color={P.rose} onClick={() => deleteEmp(e.id)} />
-              </div>
-            </div>
-            {e.locked_until && new Date(e.locked_until) > new Date() && (
-              <div style={{ background: P.roseXL, border: `1px solid ${P.roseL}`, borderRadius: 8, padding: '6px 10px', marginBottom: 8, fontSize: 12, color: P.rose, fontWeight: 700 }}>
-                🔒 مقفل حتى {new Date(e.locked_until).toLocaleTimeString('ar-SA')}
-              </div>
-            )}
-            <Btn variant={e.active ? 'danger' : 'success'} size="sm" fullWidth onClick={() => toggleClock(e)}>
-              {e.active ? 'تسجيل الانصراف' : 'تسجيل الحضور'}
-            </Btn>
-          </Card>
-        ))}
-        {emps.length === 0 && <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 40, color: P.faint, fontSize: 14 }}>لا يوجد موظفون مسجلون</div>}
-      </CardGrid>
-
-      {showAdd !== null && <EmployeeForm emp={showAdd} onClose={() => setShowAdd(null)} onSave={() => { load(); setShowAdd(null) }} />}
-    </div>
-  )
-}
-
-function EmployeeForm({ emp, onClose, onSave }: any) {
-  const isEdit = emp.id
-  const [name, setName] = useState(emp.name || '')
-  const [role, setRole] = useState(emp.role || 'cashier')
-  const [pin, setPin] = useState('')
-  const [pinConfirm, setPinConfirm] = useState('')
-
-  async function save() {
-    if (!name) { toast('الاسم مطلوب'); return }
-    if (!isEdit && !pin) { toast('رمز PIN مطلوب'); return }
-    if (pin && pin.length < 4) { toast('PIN يجب أن يكون 4 أرقام على الأقل'); return }
-    if (pin && pin !== pinConfirm) { toast('رمز PIN غير متطابق'); return }
-    const data: any = { name, role }
-    if (pin) data.pin = pin
-    try {
-      if (isEdit) await api?.employees?.update?.(emp.id, data)
-      else await api?.employees?.create?.(data)
-      toast(isEdit ? 'تم تحديث البيانات' : 'تم إضافة الموظف')
-      onSave()
-    } catch (err: any) {
-      toast(err?.message || 'خطأ في الحفظ')
-    }
-  }
-
-  return (
-    <Modal title={isEdit ? 'تعديل موظف' : 'إضافة موظف'} onClose={onClose} width={420} icon="user">
-      <Field label="الاسم" required><Inp value={name} onChange={(e: any) => setName(e.target.value)} autoFocus /></Field>
-      <Field label="الدور">
-        <Sel value={role} onChange={(e: any) => setRole(e.target.value)} options={Object.entries(ROLES).map(([v, l]) => ({ value: v, label: l }))} />
-      </Field>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
-        <Field label={isEdit ? 'PIN الجديد (اختياري)' : 'رمز PIN'} required={!isEdit}>
-          <Inp type="password" placeholder="4 أرقام" value={pin} onChange={(e: any) => setPin(e.target.value)} />
-        </Field>
-        <Field label="تأكيد PIN" required={!!pin}>
-          <Inp type="password" placeholder="أعد إدخال PIN" value={pinConfirm} onChange={(e: any) => setPinConfirm(e.target.value)} />
-        </Field>
-      </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-        <Btn variant="secondary" style={{ flex: 1 }} onClick={onClose}>إلغاء</Btn>
-        <Btn variant="primary" style={{ flex: 1 }} onClick={save}>{isEdit ? 'تحديث' : 'إضافة'}</Btn>
-      </div>
-    </Modal>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────
-// ROLES — discount limits + permissions matrix
-// ─────────────────────────────────────────────────────────────────────
-
-function RolesTab() {
-  const [cashierMaxDisc, setCashierMaxDisc] = useState(10)
-  const [managerMaxDisc, setManagerMaxDisc] = useState(30)
-
-  useEffect(() => {
-    api?.settings?.get?.('cashier_max_discount_pct').then((v: any) => v != null && setCashierMaxDisc(v))
-    api?.settings?.get?.('manager_max_discount_pct').then((v: any) => v != null && setManagerMaxDisc(v))
-  }, [])
-
-  const saveDiscount = async (key: string, val: number) => {
-    await api?.settings?.set?.(key, val)
-    toast('تم حفظ الإعداد ✓')
-  }
-
-  const perms: Record<string, string[]> = {
-    admin: ['كل الشاشات والتقارير', 'الإعدادات الكاملة للنظام', 'إدارة الموظفين والصلاحيات', 'العمليات الحساسة وتعديل المخزون'],
-    manager: ['شاشة نقطة البيع (POS)', 'إدارة القائمة والمخزون', 'التقارير اليومية والدرج', 'إلغاء الطلبات والخصم'],
-    cashier: ['شاشة نقطة البيع (POS) فقط', 'استلام المدفوعات النقدية والبنكية', 'تسجيل حضور وانصراف', 'الخصومات المسموحة'],
-    kitchen: ['شاشة عرض المطبخ', 'استقبال التذاكر والطلبات', 'تحديث حالة الطلب (جاهز)', 'تسجيل هدر مكونات بسيط']
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* Editable discount limits */}
-      <Card style={{ padding: 20 }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: P.plum, marginBottom: 14 }}>حدود الخصم</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
-          <div>
-            <div style={{ fontSize: 13, color: P.muted, fontWeight: 700, marginBottom: 6 }}>الحد الأقصى لخصم الكاشير</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <input type="range" min={0} max={50} value={cashierMaxDisc} onChange={e => setCashierMaxDisc(parseInt(e.target.value))}
-                style={{ flex: 1, accentColor: P.green }} />
-              <span style={{ fontSize: 18, fontWeight: 900, color: P.green, minWidth: 50, textAlign: 'center' }}>{cashierMaxDisc}%</span>
-            </div>
-            <Btn variant="ghost" size="sm" onClick={() => saveDiscount('cashier_max_discount_pct', cashierMaxDisc)} style={{ marginTop: 6 }}>حفظ</Btn>
-          </div>
-          <div>
-            <div style={{ fontSize: 13, color: P.muted, fontWeight: 700, marginBottom: 6 }}>الحد الأقصى لخصم المدير</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <input type="range" min={0} max={100} value={managerMaxDisc} onChange={e => setManagerMaxDisc(parseInt(e.target.value))}
-                style={{ flex: 1, accentColor: P.pink }} />
-              <span style={{ fontSize: 18, fontWeight: 900, color: P.pink, minWidth: 50, textAlign: 'center' }}>{managerMaxDisc}%</span>
-            </div>
-            <Btn variant="ghost" size="sm" onClick={() => saveDiscount('manager_max_discount_pct', managerMaxDisc)} style={{ marginTop: 6 }}>حفظ</Btn>
-          </div>
-        </div>
-      </Card>
-
-      {/* Permissions grid */}
-      <CardGrid min={280}>
-        {Object.entries(perms).map(([role, list]) => (
-          <Card key={role} style={{ padding: 18 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <div style={{ width: 12, height: 12, borderRadius: '50%', background: ROLE_COLOR[role] }} />
-              <span style={{ fontWeight: 800, fontSize: 16, color: P.plum }}>{ROLES[role]}</span>
-            </div>
-            {list.map(p => (
-              <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: P.ink, marginBottom: 8 }}>
-                <Icon name="check" size={14} color={ROLE_COLOR[role]} />
-                {p}
-              </div>
-            ))}
-          </Card>
-        ))}
-      </CardGrid>
-    </div>
-  )
-}
 
 // ─────────────────────────────────────────────────────────────────────
 // SHIFT HISTORY — read-only audit of past shifts

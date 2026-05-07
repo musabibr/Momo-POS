@@ -7,16 +7,19 @@ export interface SessionData {
   employee: {
     id: number
     name: string
-    role: Role
+    username: string
+    role: string
+    permissions: string[]
     active: number
   }
-  role: Role
+  role: string
+  permissions: string[]
 }
 
 interface SessionContextValue {
   session: SessionData | null
   loading: boolean
-  login: (employeeId: number, pin: string) => Promise<{ valid: boolean; locked?: boolean; lockedUntil?: string; employee?: any }>
+  login: (username: string, pass: string) => Promise<{ valid: boolean; locked?: boolean; lockedUntil?: string; employee?: any }>
   logout: () => Promise<void>
 }
 
@@ -36,20 +39,24 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     api?.session?.current?.().then((s: any) => {
       if (s && s.employeeId) {
         setSession({
-          employee: { id: s.employeeId, name: s.name, role: s.role, active: 1 },
+          employee: { id: s.employeeId, name: s.name, username: s.username, role: s.role, permissions: s.permissions || [], active: 1 },
           role: s.role,
+          permissions: s.permissions || []
         })
       }
     }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
-  const login = useCallback(async (employeeId: number, pin: string) => {
+  const login = useCallback(async (username: string, pass: string) => {
     try {
-      const result = await api?.session?.login?.(employeeId, pin)
+      const result = await api?.session?.login?.(username, pass)
       if (result?.valid && result.employee) {
+        let perms = []
+        try { perms = JSON.parse(result.employee.permissions) } catch {}
         setSession({
-          employee: result.employee,
+          employee: { ...result.employee, permissions: perms },
           role: result.employee.role,
+          permissions: perms
         })
         return { valid: true, employee: result.employee }
       }

@@ -4,7 +4,7 @@ import { getSession, Session } from '../session'
 import { SettingsRepo } from '../db/repositories/SettingsRepo'
 import { ShiftRepo } from '../db/repositories/ShiftRepo'
 
-export type Role = 'admin' | 'manager' | 'cashier' | 'kitchen'
+export type Role = 'admin' | 'manager' | 'cashier' | 'kitchen' | string
 
 /**
  * In-memory rate limiter for auth-sensitive IPC channels.
@@ -34,18 +34,26 @@ const RATE_LIMITED_CHANNELS = new Set([
 
 /**
  * Register an IPC handler with optional RBAC guard.
- * When `requiredRoles` is provided the handler rejects with UNAUTHORIZED
- * if the current session role is not in the list.
+ * When `requiredPermissions` is provided the handler rejects with UNAUTHORIZED
+ * if the current session does not have '*' or one of the required permissions.
+ * For backward compatibility, checking for 'admin' will also pass if session.role is 'admin'.
  */
-export function handle(channel: string, fn: (...args: any[]) => any, requiredRoles?: readonly Role[]) {
+export function handle(channel: string, fn: (...args: any[]) => any, requiredPermissions?: readonly string[]) {
   ipcMain.handle(channel, async (_event, ...args) => {
     try {
       // Rate-limit auth-sensitive channels (keyed by first arg, e.g. employee ID)
       if (RATE_LIMITED_CHANNELS.has(channel)) rateLimitCheck(channel, args[0] != null ? String(args[0]) : undefined)
 
-      if (requiredRoles && requiredRoles.length > 0) {
+      if (requiredPermissions && requiredPermissions.length > 0) {
         const session = getSession()
-        if (!session || !requiredRoles.includes(session.role)) {
+        if (!session) return { error: 'UNAUTHORIZED' }
+        
+        const perms = session.permissions || []
+        const hasPerm = perms.includes('*') || requiredPermissions.some(p => 
+          perms.includes(p) || (p === 'admin' && session.role === 'admin')
+        )
+        
+        if (!hasPerm) {
           return { error: 'UNAUTHORIZED' }
         }
       }

@@ -14,8 +14,9 @@ export function SetupWizard({ onComplete }: Props) {
   const [step, setStep] = useState(0)
   const [name, setName] = useState('')
   const [adminName, setAdminName] = useState('')
-  const [pin, setPin] = useState('')
-  const [pinConfirm, setPinConfirm] = useState('')
+  const [adminUsername, setAdminUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [passConfirm, setPassConfirm] = useState('')
   const [p1Port, setP1Port] = useState('')
   const [p2Port, setP2Port] = useState('')
   const [p1Tested, setP1Tested] = useState(false)
@@ -36,10 +37,11 @@ export function SetupWizard({ onComplete }: Props) {
 
   async function createAdmin() {
     if (!adminName) { toast('اسم المسؤول مطلوب'); return }
-    if (!pin || pin.length < 4) { toast('PIN يجب أن يكون 4 أرقام على الأقل'); return }
-    if (pin !== pinConfirm) { toast('رمز PIN غير متطابق'); return }
+    if (!adminUsername || adminUsername.length < 3) { toast('اسم المستخدم يجب أن يكون 3 أحرف على الأقل'); return }
+    if (!password || password.length < 4) { toast('كلمة المرور يجب أن تكون 4 خانات على الأقل'); return }
+    if (password !== passConfirm) { toast('كلمة المرور غير متطابقة'); return }
     try {
-      await api?.employees?.create?.({ name: adminName, role: 'admin', pin })
+      await api?.employees?.create?.({ name: adminName, role: 'admin', username: adminUsername, password, permissions: ['*'] })
       await api?.settings?.set?.('restaurant_name', name)
       toast('تم إنشاء حساب المسؤول ✓')
       setStep(2)
@@ -110,9 +112,10 @@ export function SetupWizard({ onComplete }: Props) {
         {step === 1 && (
           <div style={{ textAlign: 'right' }}>
             <Field label="اسم المسؤول" required><Inp value={adminName} onChange={(e: any) => setAdminName(e.target.value)} autoFocus /></Field>
+            <Field label="اسم المستخدم (إنجليزي)" required><Inp value={adminUsername} onChange={(e: any) => setAdminUsername(e.target.value)} placeholder="admin" dir="ltr" /></Field>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <Field label="رمز PIN" required><Inp type="password" placeholder="4 أرقام" value={pin} onChange={(e: any) => setPin(e.target.value)} /></Field>
-              <Field label="تأكيد PIN" required><Inp type="password" placeholder="أعد إدخال PIN" value={pinConfirm} onChange={(e: any) => setPinConfirm(e.target.value)} /></Field>
+              <Field label="كلمة المرور" required><Inp type="password" placeholder="4 خانات على الأقل" value={password} onChange={(e: any) => setPassword(e.target.value)} /></Field>
+              <Field label="تأكيد كلمة المرور" required><Inp type="password" placeholder="أعد إدخال كلمة المرور" value={passConfirm} onChange={(e: any) => setPassConfirm(e.target.value)} /></Field>
             </div>
             <Btn variant="primary" fullWidth onClick={createAdmin} style={{ marginTop: 12 }}>إنشاء الحساب ←</Btn>
           </div>
