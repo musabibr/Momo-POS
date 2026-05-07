@@ -34,11 +34,11 @@ function AppInner() {
   useInactivityLock(handleLock, !!session)
 
   useEffect(() => {
-    // Check if this is a first run (no employees exist)
+    // Check if setup wizard is needed (atomic check on main process side)
     const api = (window as any).api
-    api?.employees?.list?.().then((emps: any[]) => {
-      setFirstRun(!emps || emps.length === 0)
-    }).catch(() => setFirstRun(false))
+    api?.system?.isSetupRequired?.().then((needed: boolean) => {
+      setFirstRun(!!needed)
+    }).catch(() => setFirstRun(true)) // on error, show wizard (safe side)
   }, [])
 
   // Reset to default screen for the role when session changes

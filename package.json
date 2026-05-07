@@ -14,8 +14,8 @@
   },
   "build": {
     "appId": "com.momo.pos",
-    "productName": "موموـ POS",
-    "copyright": "Copyright © 2024 Momo",
+    "productName": "Momo",
+    "copyright": "Copyright © 2026 Momo",
     "directories": {
       "output": "dist-electron"
     },
@@ -28,7 +28,9 @@
       {
         "from": "src/main/db/migrations",
         "to": "migrations",
-        "filter": ["*.sql"]
+        "filter": [
+          "*.sql"
+        ]
       },
       {
         "from": "assets/fonts",
@@ -39,11 +41,15 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "requestedExecutionLevel": "asInvoker"

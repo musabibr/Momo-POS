@@ -91,7 +91,8 @@ export function SetupWizard({ onComplete }: Props) {
     if (step > 0) setStep(step - 1)
   }
 
-  function finish() {
+  async function finish() {
+    try { await api?.settings?.set?.('setup_completed', 'true') } catch { /* best effort */ }
     toast('مرحباً بك في موموـ! 🎉')
     onComplete()
   }

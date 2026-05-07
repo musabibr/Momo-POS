@@ -18,6 +18,11 @@ function invokeRaw(channel: string, ...args: any[]) {
 }
 
 const api = {
+  // ── SYSTEM ──────────────────────────────────────────────────────
+  system: {
+    isSetupRequired: () => invoke('system:isSetupRequired'),
+  },
+
   // ── SESSION ──────────────────────────────────────────────────────
   session: {
     login: (username: string, pass: string) => invokeRaw('session:login', username, pass),
