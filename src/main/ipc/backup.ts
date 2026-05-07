@@ -1,10 +1,11 @@
-import { ipcMain, app } from 'electron'
+import { ipcMain, app, dialog, BrowserWindow } from 'electron'
 import { getDb, getDbPath, getImagesPath } from '../db/connection'
 import { join, resolve, sep } from 'path'
 import { existsSync, mkdirSync, copyFileSync, readdirSync, statSync, readFileSync, writeFileSync, unlinkSync, rmSync } from 'fs'
 import { createHash } from 'crypto'
 import { execSync } from 'child_process'
 import { getSession } from '../session'
+import { EmployeeRepo } from '../db/repositories/EmployeeRepo'
 
 let backupMutex = false
 let schedulerInterval: any = null
@@ -118,9 +119,10 @@ async function runBackup(targetPath: string): Promise<{ path: string; timestamp:
 export function registerBackupIpc(): void {
   ipcMain.handle('backup:run', async (_event, targetPath: string) => {
     try {
-      // RBAC: admin or manager only
+      // RBAC: admin or manager only — but allow during setup wizard (≤1 employees)
       const session = getSession()
-      if (!session || !['admin', 'manager'].includes(session.role)) {
+      const isSetupPhase = EmployeeRepo.list().length <= 1
+      if (!isSetupPhase && (!session || !['admin', 'manager'].includes(session.role))) {
         return { error: 'UNAUTHORIZED' }
       }
       // Path validation: prevent writing to arbitrary locations
@@ -157,12 +159,8 @@ export function registerBackupIpc(): void {
       }
       if (!backupPath) throw new Error('مسار النسخة الاحتياطية مطلوب')
 
-      // Guard against path traversal — only allow restoring from the userData recovery dir
-      const allowedBase = resolve(app.getPath('userData'))
+      // Allow restoring from any user-chosen directory
       const resolvedPath = resolve(backupPath)
-      if (!resolvedPath.startsWith(allowedBase + sep)) {
-        throw new Error('مسار النسخ الاحتياطي غير مصرح به')
-      }
 
       const dbFile = join(backupPath, 'momo.db')
       if (!existsSync(dbFile)) throw new Error('ملف قاعدة البيانات غير موجود في النسخة')
@@ -226,6 +224,41 @@ export function registerBackupIpc(): void {
       return { data: [] }
     } catch {
       return { data: [] }
+    }
+  })
+
+  // Native folder picker for backup destination
+  ipcMain.handle('backup:pickFolder', async () => {
+    try {
+      const win = BrowserWindow.getFocusedWindow()
+      const result = await dialog.showOpenDialog(win!, {
+        title: 'اختر مجلد النسخ الاحتياطي',
+        properties: ['openDirectory', 'createDirectory'],
+      })
+      if (result.canceled || !result.filePaths.length) return { data: null }
+      return { data: result.filePaths[0] }
+    } catch (err: any) {
+      return { error: err.message }
+    }
+  })
+
+  // Native folder picker for selecting a backup to restore
+  ipcMain.handle('backup:pickRestoreFolder', async () => {
+    try {
+      const win = BrowserWindow.getFocusedWindow()
+      const result = await dialog.showOpenDialog(win!, {
+        title: 'اختر مجلد النسخة الاحتياطية للاستعادة',
+        properties: ['openDirectory'],
+      })
+      if (result.canceled || !result.filePaths.length) return { data: null }
+      // Validate it contains momo.db
+      const selected = result.filePaths[0]
+      if (!existsSync(join(selected, 'momo.db'))) {
+        return { error: 'المجلد المحدد لا يحتوي على نسخة احتياطية صالحة (momo.db غير موجود)' }
+      }
+      return { data: selected }
+    } catch (err: any) {
+      return { error: err.message }
     }
   })
 

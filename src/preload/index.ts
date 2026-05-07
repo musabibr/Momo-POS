@@ -214,7 +214,9 @@ const api = {
   // ── BACKUP ──────────────────────────────────────────────────────
   backup: {
     run: (targetPath: string) => invoke('backup:run', targetPath),
-    restore: (backupPath: string) => invoke('backup:restore', backupPath)
+    restore: (backupPath: string) => invoke('backup:restore', backupPath),
+    pickFolder: () => invoke('backup:pickFolder'),
+    pickRestoreFolder: () => invoke('backup:pickRestoreFolder'),
   },
 
   // ── PRINTER ─────────────────────────────────────────────────────

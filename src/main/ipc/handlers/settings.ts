@@ -1,7 +1,9 @@
 import { handle } from '../helpers'
+import { getSession } from '../../session'
 import { ReportRepo } from '../../db/repositories/ReportRepo'
 import { SettingsRepo } from '../../db/repositories/SettingsRepo'
 import { ActionLogRepo } from '../../db/repositories/ActionLogRepo'
+import { EmployeeRepo } from '../../db/repositories/EmployeeRepo'
 import { setSettingSchema } from '../schemas'
 
 export function registerReportHandlers() {
@@ -18,9 +20,15 @@ export function registerSettingsHandlers() {
   // settings:get and getBanks are un-gated — POS reads them pre-session
   handle('settings:get', (key: string) => SettingsRepo.get(key))
   handle('settings:set', (key: string, value: string) => {
+    // Allow during setup wizard (0 or 1 employees — admin just created, no session yet)
+    const isSetupPhase = EmployeeRepo.list().length <= 1
+    const session = getSession()
+    if (!isSetupPhase && (!session || (!session.permissions?.includes('*') && session.role !== 'admin' && !session.permissions?.includes('admin')))) {
+      throw new Error('UNAUTHORIZED')
+    }
     setSettingSchema.parse({ key, value })
     return SettingsRepo.set(key, value)
-  }, ['admin'])
+  })
   handle('settings:getAll', () => SettingsRepo.getAll(), ['admin'])
   handle('settings:getBanks', () => SettingsRepo.getBanks())
   handle('settings:setBanks', (banks: string[]) => SettingsRepo.setBanks(banks), ['admin'])

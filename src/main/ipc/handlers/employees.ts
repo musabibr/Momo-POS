@@ -1,4 +1,5 @@
 import { handle } from '../helpers'
+import { getSession } from '../../session'
 import { EmployeeRepo } from '../../db/repositories/EmployeeRepo'
 import { createEmployeeSchema, updateEmployeeSchema } from '../schemas'
 
@@ -7,9 +8,17 @@ export function registerEmployeeHandlers() {
   handle('employees:list', () => EmployeeRepo.list())
   handle('employees:get', (id: number) => EmployeeRepo.getById(id), ['admin'])
   handle('employees:create', (data) => {
+    const session = getSession()
+    // Allow if no employees exist (first run setup) or if user is admin
+    const isFirstRun = EmployeeRepo.list().length === 0
+    
+    if (!isFirstRun && (!session || (!session.permissions?.includes('*') && session.role !== 'admin' && !session.permissions?.includes('admin')))) {
+      throw new Error('UNAUTHORIZED')
+    }
+    
     const validated = createEmployeeSchema.parse(data)
     return EmployeeRepo.create(validated)
-  }, ['admin'])
+  })
   handle('employees:update', (id: number, data) => {
     const validated = updateEmployeeSchema.parse(data)
     return EmployeeRepo.update(id, validated)

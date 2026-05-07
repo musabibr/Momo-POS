@@ -370,7 +370,17 @@ function BackupTab() {
       <Card style={{ padding: 18 }}>
         <div style={{ fontWeight: 800, fontSize: 15, color: P.plum, marginBottom: 4 }}>مسار النسخ الاحتياطي</div>
         <div style={{ fontSize: 13, color: P.muted, marginBottom: 14 }}>حفظ ملفات قاعدة البيانات محلياً أو على وحدة USB</div>
-        <Field label="مسار المجلد / USB" style={{ marginBottom: 10 }}><Inp value={usbPath} onChange={(e: any) => setUsbPath(e.target.value)} placeholder="مثال: E:\backups" /></Field>
+        <Field label="مسار المجلد / USB" style={{ marginBottom: 10 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Inp value={usbPath} onChange={(e: any) => setUsbPath(e.target.value)} placeholder="مثال: E:\backups" style={{ flex: 1 }} />
+            <Btn variant="secondary" size="sm" onClick={async () => {
+              try {
+                const path = await api?.backup?.pickFolder?.()
+                if (path) { setUsbPath(path); await api?.settings?.set?.('backup_usb_path', path); toast('تم تحديد المجلد ✓') }
+              } catch { /* cancelled */ }
+            }}>تصفح</Btn>
+          </div>
+        </Field>
         <Field label="جدول النسخ التلقائي" style={{ marginBottom: 10 }}><Sel value={schedule} onChange={(e: any) => { setSchedule(e.target.value); api?.settings?.set?.('backup_schedule', e.target.value) }} options={[{value:'hourly',label:'كل ساعة'},{value:'shift',label:'عند إغلاق الوردية'},{value:'daily',label:'يومياً'}]} /></Field>
         {lastBackup && <div style={{ fontSize: 13, color: P.green, fontWeight: 600, marginBottom: 14 }}>آخر نسخ: {lastBackup.slice(0, 16).replace('T', ' ')}</div>}
       </Card>
@@ -380,9 +390,16 @@ function BackupTab() {
           <Icon name="usb" size={26} color={P.purple} style={{ margin: '0 auto 8px', opacity: backing ? 0.5 : 1 }} />
           <div style={{ fontWeight: 700, fontSize: 14, color: P.plum }}>{backing ? 'جاري النسخ...' : 'نسخ الآن ← مسار'}</div>
         </div>
-        <div onClick={() => api?.backup?.restore?.().then(() => toast('تمت الاستعادة ✓')).catch(() => toast('فشل الاستعادة'))} style={{ flex: 1, padding: 16, textAlign: 'center', cursor: 'pointer', background: P.surface, border: `1px solid ${P.border}`, borderRadius: 12, transition: 'background .15s' }}>
+        <div onClick={async () => {
+          try {
+            const folder = await api?.backup?.pickRestoreFolder?.()
+            if (!folder) return
+            await api?.backup?.restore?.(folder)
+            toast('تمت الاستعادة — سيتم إعادة التشغيل ✓')
+          } catch (e: any) { toast(e?.message || 'فشل الاستعادة', 'error') }
+        }} style={{ flex: 1, padding: 16, textAlign: 'center', cursor: 'pointer', background: P.surface, border: `1px solid ${P.border}`, borderRadius: 12, transition: 'background .15s' }}>
           <Icon name="refresh" size={26} color={P.gold} style={{ margin: '0 auto 8px' }} />
-          <div style={{ fontWeight: 700, fontSize: 14, color: P.plum }}>استعادة من ملف</div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: P.plum }}>استعادة من مجلد</div>
         </div>
       </div>
 
