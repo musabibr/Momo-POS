@@ -604,21 +604,21 @@ export function POSScreen() {
         </div>}
         {/* Items grid — scrollable container */}
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 155px)', justifyContent: 'center', gap: 14, padding: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, padding: '10px' }}>
             {filtered.map(item => (
               <button key={item.id} onClick={() => handleItemClick(item)} className="pos-item-card"
-                style={{ width: 155, background: P.surface, border: `1.5px solid ${P.border}`, borderRadius: 16, padding: 0, cursor: 'pointer', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden', boxShadow: '0 2px 8px rgba(88,28,135,.06)', fontFamily: 'Cairo,sans-serif' }}>
-                <div style={{ width: '100%', height: 150, overflow: 'hidden', flexShrink: 0, position: 'relative', background: `linear-gradient(135deg,${P.bg3},${P.purpleXL})` }}>
+                style={{ background: P.surface, border: `1.5px solid ${P.border}`, borderRadius: 14, padding: 0, cursor: 'pointer', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden', boxShadow: '0 2px 8px rgba(88,28,135,.06)', fontFamily: 'Cairo,sans-serif' }}>
+                <div style={{ width: '100%', aspectRatio: '1', overflow: 'hidden', flexShrink: 0, position: 'relative', background: `linear-gradient(135deg,${P.bg3},${P.purpleXL})` }}>
                   {(item.display_mode === 'image') && item.image_path
                     ? <img src={item.image_path} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }} onError={(e: any) => { e.target.style.display = 'none'; e.target.nextSibling && (e.target.nextSibling.style.display = 'flex') }} />
                     : null}
-                  <div style={{ width: '100%', height: '100%', position: (item.display_mode === 'image') && item.image_path ? 'absolute' : 'relative', top: 0, left: 0, display: (item.display_mode === 'image') && item.image_path ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center' }}><MenuIcon id={item.emoji} size={64} style={{ width: 64, height: 64 }} /></div>
+                  <div style={{ width: '100%', height: '100%', position: (item.display_mode === 'image') && item.image_path ? 'absolute' : 'relative', top: 0, left: 0, display: (item.display_mode === 'image') && item.image_path ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center' }}><MenuIcon id={item.emoji} size={56} style={{ width: 56, height: 56 }} /></div>
                 </div>
-                <div style={{ padding: '8px 8px 10px', width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 4 }}>
-                  <div title={item.name} style={{ fontSize: 13, color: P.ink, fontWeight: 700, lineHeight: 1.35, textAlign: 'center', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 35 }}>{item.name}</div>
+                <div style={{ padding: '6px 6px 8px', width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 2 }}>
+                  <div title={item.name} style={{ fontSize: 12.5, color: P.ink, fontWeight: 700, lineHeight: 1.3, textAlign: 'center', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 32 }}>{item.name}</div>
                   <div>
-                    {(item.optionGroups || []).length > 0 && <div style={{ fontSize: 10, color: P.muted, marginBottom: 2 }}>متعدد الخيارات</div>}
-                    <div style={{ fontSize: 15, color: P.purple, fontWeight: 900 }}>{item.price.toLocaleString()} <span style={{ fontSize: 10, fontWeight: 600, color: P.faint }}>ج.س</span></div>
+                    {(item.optionGroups || []).length > 0 && <div style={{ fontSize: 9.5, color: P.muted, marginBottom: 1 }}>متعدد الخيارات</div>}
+                    <div style={{ fontSize: 14, color: P.purple, fontWeight: 900 }}>{item.price.toLocaleString()} <span style={{ fontSize: 9.5, fontWeight: 600, color: P.faint }}>ج.س</span></div>
                   </div>
                 </div>
               </button>
