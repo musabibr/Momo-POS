@@ -235,7 +235,12 @@ const api = {
     printZReport: (reportData: any) => invoke('printer:printZReport', reportData),
     previewPDF: (receiptData: any) => invoke('printer:previewPDF', receiptData),
     saveShiftReportPDF: (html: string) => invoke('printer:saveShiftReportPDF', html),
-    testPrint: (printerNum: number) => invoke('printer:testPrint', printerNum)
+    testPrint: (printerNum: number) => invoke('printer:testPrint', printerNum),
+    // Smart auto-detect
+    getSystemPrinters: () => invoke('printer:getSystemPrinters'),
+    setAssignment: (role: string, printerName: string) => invoke('printer:setAssignment', role, printerName),
+    getAssignments: () => invoke('printer:getAssignments'),
+    setSilentMode: (silent: boolean) => invoke('printer:setSilentMode', silent)
   }
 }
 

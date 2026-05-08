@@ -65,9 +65,9 @@ app.whenReady().then(() => {
   // Initialize database
   initDatabase()
   runMigrations()
-  // Seeding is now handled by migration 015_seed_demo.sql
-  // runSeed()
-  // runDemoData()
+  // Seeding is now handled dynamically by seed.ts
+  // runSeed() // Disabled for production to trigger Setup Wizard
+  // runDemoData() // Disabled for production build
 
   // Register IPC handlers
   registerAllIpc()

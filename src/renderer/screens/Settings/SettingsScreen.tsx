@@ -229,49 +229,126 @@ function BanksTab() {
 }
 
 function PrintTab() {
-  const [sett, setSett] = useState({ p1: '', p2: '', charset: 'auto' })
+  const [printers, setPrinters] = useState<any[]>([])
+  const [assignments, setAssignments] = useState({ cashier: '', kitchen: '', silentMode: true })
+  const [scanning, setScanning] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [testResult, setTestResult] = useState<any>(null)
 
-  useEffect(() => {
-    api?.settings?.getAll?.().then((s: any) => {
-      if (s) setSett({ p1: s.printer1_port || '', p2: s.printer2_port || '', charset: s.printer_charset || 'auto' })
-    })
-  }, [])
-
-  const upd = (k: string, v: string) => setSett(p => ({ ...p, [k]: v }))
-
-  async function save() {
-    await api?.settings?.set?.('printer1_port', sett.p1)
-    await api?.settings?.set?.('printer2_port', sett.p2)
-    await api?.settings?.set?.('printer_charset', sett.charset)
-    setSaved(true)
-    toast('تم حفظ منافذ الطابعات ✓')
-    setTimeout(() => setSaved(false), 2200)
+  const scan = async () => {
+    setScanning(true)
+    try {
+      const list = await api?.printer?.getSystemPrinters?.()
+      setPrinters(Array.isArray(list) ? list : [])
+    } catch { setPrinters([]) }
+    try {
+      const a = await api?.printer?.getAssignments?.()
+      if (a) setAssignments(a)
+    } catch {}
+    setScanning(false)
   }
 
+  useEffect(() => { scan() }, [])
+
+  const assign = async (role: string, name: string) => {
+    setAssignments(p => ({ ...p, [role]: name }))
+    await api?.printer?.setAssignment?.(role, name)
+  }
+
+  const toggleSilent = async () => {
+    const next = !assignments.silentMode
+    setAssignments(p => ({ ...p, silentMode: next }))
+    await api?.printer?.setSilentMode?.(next)
+  }
+
+  const testPrint = async (num: number) => {
+    setTestResult(null)
+    toast(`جاري اختبار الطابعة ${num}…`)
+    try {
+      const r = await api?.printer?.testPrint?.(num)
+      setTestResult(r)
+      if (r?.success) toast(r.message || '✅ تمت الطباعة', 'success')
+      else toast(r?.message || '❌ فشل الاختبار', 'error')
+    } catch { toast('خطأ في الاختبار') }
+  }
+
+  const printerOptions = [{ value: '', label: '— تلقائي (كشف ذكي) —' }, ...printers.map((p: any) => ({ value: p.name, label: `${p.name}${p.isDefault ? ' ⭐' : ''}` }))]
+
   return (
-    <div style={{ maxWidth: 500, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {[
-        { n: 1, l: 'طابعة الكاشير', d: 'الإيصال الكامل مع الدفع.', c: P.purple },
-        { n: 2, l: 'طابعة المطبخ', d: 'تذاكر التحضير فقط.', c: P.pink }
-      ].map(p => (
-        <Card key={p.n} style={{ padding: 18 }}>
-          <div style={{ fontWeight: 800, fontSize: 15, color: p.c, marginBottom: 4 }}>{p.l}</div>
-          <div style={{ fontSize: 13, color: P.muted, marginBottom: 12 }}>{p.d}</div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-            <Field label="منفذ الطابعة (مثال COM3 أو USB)" style={{ marginBottom: 0, flex: 1 }}>
-              <Inp value={(sett as any)[`p${p.n}`]} onChange={(e: any) => upd(`p${p.n}`, e.target.value)} />
-            </Field>
-            <Btn variant="secondary" size="sm" icon="print" onClick={() => toast(`اختبار الطباعة ${p.n}…`)} style={{ borderColor: `${p.c}40`, color: p.c }}>اختبار</Btn>
+    <div style={{ maxWidth: 560, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Status bar */}
+      <Card style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: printers.length > 0 ? P.greenXL : P.goldXL, border: `1.5px solid ${printers.length > 0 ? P.greenL : P.goldL}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: printers.length > 0 ? P.green : P.gold, boxShadow: `0 0 8px ${printers.length > 0 ? P.green : P.gold}` }} />
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 14, color: P.plum }}>
+              {scanning ? 'جاري البحث عن الطابعات…' : printers.length > 0 ? `تم العثور على ${printers.length} طابعة` : 'لم يتم العثور على طابعات'}
+            </div>
+            {printers.length > 0 && <div style={{ fontSize: 12, color: P.muted }}>{printers.map((p: any) => p.name).join('، ')}</div>}
           </div>
+        </div>
+        <Btn variant="secondary" size="sm" icon="refresh" onClick={scan} style={{ flexShrink: 0 }}>
+          {scanning ? '…' : 'إعادة البحث'}
+        </Btn>
+      </Card>
+
+      {/* Cashier Printer */}
+      {[
+        { role: 'cashier', num: 1, label: 'طابعة الكاشير', desc: 'الإيصال الكامل مع الأسعار والدفع', color: P.purple, icon: '🧾' },
+        { role: 'kitchen', num: 2, label: 'طابعة المطبخ', desc: 'تذاكر التحضير بدون أسعار', color: P.pink, icon: '👨‍🍳' }
+      ].map(p => (
+        <Card key={p.role} style={{ padding: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{ fontSize: 20 }}>{p.icon}</span>
+            <div style={{ fontWeight: 800, fontSize: 15, color: p.color }}>{p.label}</div>
+          </div>
+          <div style={{ fontSize: 13, color: P.muted, marginBottom: 12 }}>{p.desc}</div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+            <Field label="الطابعة المعيّنة" style={{ marginBottom: 0, flex: 1 }}>
+              <Sel
+                value={(assignments as any)[p.role] || ''}
+                onChange={(e: any) => assign(p.role, e.target.value)}
+                options={printerOptions}
+              />
+            </Field>
+            <Btn variant="secondary" size="sm" icon="print" onClick={() => testPrint(p.num)} style={{ borderColor: `${p.color}40`, color: p.color }}>اختبار</Btn>
+          </div>
+          {(assignments as any)[p.role] === '' && printers.length > 0 && (
+            <div style={{ fontSize: 11.5, color: P.green, fontWeight: 600, marginTop: 6 }}>
+              ✨ الكشف الذكي مفعّل — سيتم اختيار الطابعة تلقائياً
+            </div>
+          )}
         </Card>
       ))}
-      <Card style={{ padding: 18, marginTop: 4 }}>
-        <div style={{ fontWeight: 800, fontSize: 15, color: P.plum, marginBottom: 4 }}>ترميز الأحرف</div>
-        <div style={{ fontSize: 13, color: P.muted, marginBottom: 12 }}>حدد ترميز الطابعة للعربية</div>
-        <Sel value={sett.charset} onChange={(e: any) => upd('charset', e.target.value)} options={[{value:'auto',label:'تلقائي'},{value:'PC864',label:'PC864'},{value:'PC720',label:'PC720'},{value:'bitmap',label:'صورة فقط (Bitmap)'}]} />
+
+      {/* Silent mode toggle */}
+      <Card style={{ padding: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: P.plum, marginBottom: 4 }}>
+              {assignments.silentMode ? '🔇 طباعة صامتة' : '🖨️ طباعة مع نافذة الحوار'}
+            </div>
+            <div style={{ fontSize: 13, color: P.muted, lineHeight: 1.5 }}>
+              {assignments.silentMode
+                ? 'الطباعة تتم مباشرة بدون نافذة — أسرع للمطاعم'
+                : 'تظهر نافذة اختيار الطابعة قبل كل عملية طباعة'}
+            </div>
+          </div>
+          <Btn
+            variant={assignments.silentMode ? 'success' : 'secondary'}
+            size="sm"
+            onClick={toggleSilent}
+          >
+            {assignments.silentMode ? 'صامتة' : 'حوار'}
+          </Btn>
+        </div>
       </Card>
-      <Btn variant={saved ? 'success' : 'primary'} icon={saved ? 'check' : 'save'} onClick={save} style={{ alignSelf: 'flex-start', marginTop: 8 }}>{saved ? 'تم الحفظ!' : 'حفظ المنافذ'}</Btn>
+
+      {/* Info note */}
+      <div style={{ fontSize: 12, color: P.faint, lineHeight: 1.7, padding: '8px 4px' }}>
+        💡 <strong>ملاحظة:</strong> إذا كانت لديك طابعة واحدة فقط، سيتم طباعة إيصال الكاشير وتذكرة المطبخ عليها تلقائياً.
+        اختر "تلقائي" للسماح للنظام باختيار الطابعة المناسبة بناءً على اسمها.
+      </div>
     </div>
   )
 }

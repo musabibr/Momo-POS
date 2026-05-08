@@ -286,10 +286,8 @@ export function POSScreen() {
       }
       setReceipt(receiptData)
       setOrder([]); setPayMode(null); setShowPay(false); setDiscount(0); setDiscountReason(''); setCashIn(''); setBankRef(''); setCashPart(''); setShowDiscount(false); setCustMatch(null); setOrderNote(''); setTableNum(''); setOrderType('local');
-      toast('✓ تم تأكيد الطلب وإرساله للطباعة')
-      // Auto-print both receipts
-      api?.printer?.print?.(receiptData).catch(() => {})
-      api?.printer?.printKitchen?.(receiptData).catch(() => {})
+      toast('✓ تم تأكيد الطلب')
+      // Printing happens via the "طباعة" button on the receipt screen
     } catch (err: any) {
       toast(err.message || 'خطأ في إنشاء الطلب')
     } finally {
