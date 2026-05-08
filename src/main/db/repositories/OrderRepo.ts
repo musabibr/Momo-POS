@@ -284,11 +284,24 @@ export class OrderRepo {
         const diff = item.qty - newQty // positive = removed items
 
         if (diff !== 0) {
-          // 1. Restore stock for removed quantity via recipes
+          // 1. Adjust stock via recipes
           const recipes = recipeStmt.all(item.item_id) as any[]
           for (const recipe of recipes) {
             const restoreQty = recipe.quantity * diff
-            db.prepare(`UPDATE inventory_stock SET quantity = quantity + ? WHERE item_id = ? AND location_id = 'kitchen'`)
+
+            if (diff < 0) {
+              // Quantity increased → need to deduct MORE stock from kitchen
+              const deductQty = Math.abs(restoreQty)
+              const currentRow = db.prepare(`SELECT quantity FROM inventory_stock WHERE item_id = ? AND location_id = 'kitchen'`)
+                .get(recipe.ingredient_id) as any
+              const currentQty = currentRow?.quantity || 0
+              if (currentQty < deductQty) {
+                const itemName = (db.prepare(`SELECT name FROM inventory_items WHERE id = ?`).get(recipe.ingredient_id) as any)?.name || recipe.ingredient_id
+                throw new Error(`مخزون المطبخ غير كافي لـ "${itemName}" (متوفر: ${currentQty}, مطلوب: ${deductQty})`)
+              }
+            }
+
+            db.prepare(`UPDATE inventory_stock SET quantity = MAX(0, quantity + ?) WHERE item_id = ? AND location_id = 'kitchen'`)
               .run(restoreQty, recipe.ingredient_id)
             adjStmt.run(recipe.ingredient_id, restoreQty, diff > 0 ? 'correction_restore' : 'correction_deduct',
               `تصحيح طلب #${order.order_num}`, employeeId, orderId)
@@ -336,16 +349,22 @@ export class OrderRepo {
       db.prepare(`UPDATE orders SET subtotal = ?, disc_amount = ?, total = ? WHERE id = ?`)
         .run(newSubtotal, newDiscAmt, newTotal, orderId)
 
-      // 5. Adjust customer loyalty for the difference
+      // 5. Adjust customer loyalty for the difference (both directions)
       if (order.customer_id) {
         const loyaltyRate = db.prepare(`SELECT value FROM settings WHERE key = 'loyalty_rate'`).get() as any
         const rate = Math.max(1, parseInt(loyaltyRate?.value || '1000') || 1000)
         const oldPoints = Math.floor(order.total / rate)
         const newPoints = Math.floor(newTotal / rate)
-        const pointsDiff = oldPoints - newPoints
+        const pointsDiff = oldPoints - newPoints // positive = revoke, negative = award
+        const spendDiff = order.total - newTotal  // positive = decreased, negative = increased
         if (pointsDiff > 0) {
+          // Order total decreased → revoke excess points and spend
           db.prepare(`UPDATE customers SET points = MAX(0, points - ?), total_spend = MAX(0, total_spend - ?) WHERE id = ?`)
-            .run(pointsDiff, order.total - newTotal, order.customer_id)
+            .run(pointsDiff, spendDiff, order.customer_id)
+        } else if (pointsDiff < 0) {
+          // Order total increased → award additional points and spend
+          db.prepare(`UPDATE customers SET points = points + ?, total_spend = total_spend + ? WHERE id = ?`)
+            .run(Math.abs(pointsDiff), Math.abs(spendDiff), order.customer_id)
         }
       }
 

@@ -15,6 +15,14 @@ const rateLimitMap: Map<string, { count: number; resetAt: number }> = new Map()
 const RATE_LIMIT_MAX = 15
 const RATE_LIMIT_WINDOW_MS = 60_000
 
+// Periodic cleanup of expired rate-limit entries to prevent unbounded memory growth
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, entry] of rateLimitMap) {
+    if (now > entry.resetAt) rateLimitMap.delete(key)
+  }
+}, 10 * 60 * 1000)
+
 function rateLimitCheck(channel: string, key?: string): void {
   const rateLimitKey = key ? `${channel}:${key}` : channel
   const now = Date.now()

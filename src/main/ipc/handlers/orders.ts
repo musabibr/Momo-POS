@@ -12,9 +12,15 @@ export function registerOrderHandlers() {
     const session = getSession()
     if (!session) throw new Error('يجب تسجيل الدخول لإتمام الطلب')
     validated.employeeId = session.employeeId
-    // Always attach the current shift so orders are counted in shift close / Z-report.
-    const currentShift = ShiftRepo.getCurrent() as any
-    if (currentShift) validated.shiftId = currentShift.id
+
+    // Always attach a shift so orders are never orphaned from Z-reports.
+    // If no shift is open and shifts aren't required, auto-create a default one.
+    let currentShift = ShiftRepo.getCurrent() as any
+    if (!currentShift) {
+      currentShift = ShiftRepo.open(session.employeeId, 0)
+    }
+    validated.shiftId = currentShift.id
+
     return OrderRepo.create(validated)
   }, ['admin', 'manager', 'cashier'])
 

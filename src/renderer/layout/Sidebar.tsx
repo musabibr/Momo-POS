@@ -97,7 +97,7 @@ export function Sidebar({ active, onChange, collapsed, role, permissions, employ
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, color: P.muted }}>
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: P.green, boxShadow: `0 0 6px ${P.green}66` }} />
-              غير متصل · آمن
+              وضع محلي · آمن
             </div>
           </>
         ) : (

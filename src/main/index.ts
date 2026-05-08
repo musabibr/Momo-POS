@@ -14,6 +14,10 @@ import { getImagesPath } from './db/connection'
 
 let mainWindow: BrowserWindow | null = null
 
+// Suppress noisy Chromium disk cache errors (backend_impl.cc / entry_impl.cc)
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache')
+app.commandLine.appendSwitch('disk-cache-size', '0')
+
 /**
  * Register custom protocol `momo-img://` to serve product images from userData/images/.
  * This avoids file:// cross-origin issues when the renderer runs on http://localhost (dev mode).

@@ -68,11 +68,11 @@ function AppInner() {
     }
   }
 
-  // Loading state
+  // Loading state — use matching background to prevent white flash
   if (firstRun === null || loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: P.bg }}>
-        <div style={{ fontSize: 24, color: P.purple, fontWeight: 900, fontFamily: 'Cairo,sans-serif' }}>موموـ POS</div>
+      <div className="app-fadein" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: `linear-gradient(135deg, #1a0a2e 0%, #2d1657 40%, #1a0a2e 100%)` }}>
+        <div style={{ fontSize: 24, color: '#fff', fontWeight: 900, fontFamily: 'Cairo,sans-serif', opacity: 0.8 }}>Momo</div>
       </div>
     )
   }
@@ -81,12 +81,12 @@ function AppInner() {
   if (firstRun) return <><SetupWizard onComplete={() => setFirstRun(false)} /><ToastHost /></>
 
   // Login gate — no session means show login
-  if (!session) return <><LoginScreen onLogin={login} /><ToastHost /></>
+  if (!session) return <div className="app-fadein"><LoginScreen onLogin={login} /><ToastHost /></div>
 
   // Kitchen role — fullscreen, no sidebar
   if (session.role === 'kitchen') {
     return (
-      <div style={{ height: '100vh', direction: 'rtl', fontFamily: 'Cairo, sans-serif', background: P.bg }}>
+      <div className="app-fadein" style={{ height: '100vh', direction: 'rtl', fontFamily: 'Cairo, sans-serif', background: P.bg }}>
         <KitchenConsole />
         <ToastHost />
       </div>
@@ -94,7 +94,7 @@ function AppInner() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', direction: 'rtl', fontFamily: 'Cairo, sans-serif', background: P.bg }}>
+    <div className="app-fadein" style={{ display: 'flex', height: '100vh', direction: 'rtl', fontFamily: 'Cairo, sans-serif', background: P.bg }}>
       <Sidebar active={active} onChange={setActive} collapsed={collapsed} role={session.role} permissions={session.permissions} employee={session.employee} onLogout={logout} />
       <main
         style={{
@@ -106,7 +106,9 @@ function AppInner() {
           paddingBottom: mobileNav ? 56 : 0,
         }}
       >
-        {renderScreen()}
+        <div key={active} className="screen-content" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+          {renderScreen()}
+        </div>
       </main>
       {mobileNav && <MobileNav active={active} onChange={setActive} />}
       <ToastHost />

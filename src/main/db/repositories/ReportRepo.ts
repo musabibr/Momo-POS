@@ -103,9 +103,9 @@ export class ReportRepo {
     if (filters?.startDate) { dWhere += ' AND sa.created_at >= ?'; dParams.push(filters.startDate) }
     if (filters?.endDate) { dWhere += ' AND sa.created_at <= ?'; dParams.push(filters.endDate + ' 23:59:59') }
     const damages = db.prepare(`
-      SELECT COALESCE(SUM(sa.quantity * i.cost_per_unit), 0) as total_damage_cost
+      SELECT COALESCE(SUM(sa.quantity * COALESCE(i.cost_per_unit, 0)), 0) as total_damage_cost
       FROM stock_adjustments sa
-      JOIN inventory_items i ON i.id = sa.ingredient_id
+      LEFT JOIN inventory_items i ON i.id = sa.ingredient_id
       ${dWhere}
     `).get(...dParams) as any
 
