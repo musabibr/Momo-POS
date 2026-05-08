@@ -149,7 +149,7 @@ export function KitchenStockPanel() {
   const selS: React.CSSProperties = {
     width: '100%', background: P.bg2, border: `1.5px solid ${P.border}`, borderRadius: 10,
     padding: '9px 13px', color: P.plum, fontSize: 14, outline: 'none',
-    fontFamily: 'Tajawal, sans-serif', cursor: 'pointer'
+    fontFamily: 'Cairo, sans-serif', cursor: 'pointer'
   }
 
   return (
@@ -165,7 +165,7 @@ export function KitchenStockPanel() {
             style={{
               width: '100%', padding: '7px 12px 7px 12px', borderRadius: 10,
               border: `1.5px solid ${P.border}`, background: P.surface,
-              fontSize: 12, fontFamily: 'Tajawal,sans-serif', color: P.ink,
+              fontSize: 12, fontFamily: 'Cairo,sans-serif', color: P.ink,
               outline: 'none', direction: 'rtl', paddingRight: 30,
             }}
             onFocus={e => e.currentTarget.style.borderColor = P.purple}
@@ -183,7 +183,7 @@ export function KitchenStockPanel() {
               cursor: 'pointer', border: `1.5px solid ${filter === f.id ? (f.id === 'low' ? P.rose : P.purple) : P.border}`,
               background: filter === f.id ? (f.id === 'low' ? P.roseXL : P.purpleXL) : P.surface,
               color: filter === f.id ? (f.id === 'low' ? P.rose : P.purple) : P.muted,
-              fontFamily: 'Tajawal,sans-serif', transition: 'all .12s', whiteSpace: 'nowrap',
+              fontFamily: 'Cairo,sans-serif', transition: 'all .12s', whiteSpace: 'nowrap',
             }}>
               {f.label} <span style={{ opacity: 0.7 }}>({f.count})</span>
             </button>
@@ -201,7 +201,7 @@ export function KitchenStockPanel() {
       ) : (
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
           <ResponsiveTable minWidth={600} stickyHeader>
-            <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse', fontFamily: 'Tajawal,sans-serif' }}>
+            <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse', fontFamily: 'Cairo,sans-serif' }}>
               <thead>
                 <tr style={{ background: P.bg2 }}>
                   {['المادة', 'النوع', 'الكمية', 'الوحدة', 'الحالة', 'إجراءات'].map(h =>
@@ -240,19 +240,19 @@ export function KitchenStockPanel() {
                       <td style={{ padding: '10px 8px' }}>
                         <div style={{ display: 'flex', gap: 3 }}>
                           <button title="إضافة" onClick={() => { setShowAdj(item); setAdjType('add'); setAdjQty(''); setAdjReason('') }}
-                            style={{ padding: '5px 8px', background: P.greenXL, border: `1px solid ${P.greenL}`, borderRadius: 7, color: P.green, cursor: 'pointer', fontSize: 12, fontFamily: 'Tajawal,sans-serif', fontWeight: 800 }}>+</button>
+                            style={{ padding: '5px 8px', background: P.greenXL, border: `1px solid ${P.greenL}`, borderRadius: 7, color: P.green, cursor: 'pointer', fontSize: 12, fontFamily: 'Cairo,sans-serif', fontWeight: 800 }}>+</button>
                           <button title="سحب" onClick={() => { setShowAdj(item); setAdjType('remove'); setAdjQty(''); setAdjReason('') }}
-                            style={{ padding: '5px 8px', background: P.roseXL, border: `1px solid ${P.roseL}`, borderRadius: 7, color: P.rose, cursor: 'pointer', fontSize: 12, fontFamily: 'Tajawal,sans-serif', fontWeight: 800 }}>−</button>
+                            style={{ padding: '5px 8px', background: P.roseXL, border: `1px solid ${P.roseL}`, borderRadius: 7, color: P.rose, cursor: 'pointer', fontSize: 12, fontFamily: 'Cairo,sans-serif', fontWeight: 800 }}>−</button>
                           <button title="استهلاك" onClick={() => { setShowUsage(item); setUsageQty(''); setUsageReason('') }}
-                            style={{ padding: '5px 8px', background: P.goldXL, border: `1px solid ${P.goldL}`, borderRadius: 7, color: P.gold, cursor: 'pointer', fontSize: 11, fontFamily: 'Tajawal,sans-serif', fontWeight: 700 }}>⚡</button>
+                            style={{ padding: '5px 8px', background: P.goldXL, border: `1px solid ${P.goldL}`, borderRadius: 7, color: P.gold, cursor: 'pointer', fontSize: 11, fontFamily: 'Cairo,sans-serif', fontWeight: 700 }}>⚡</button>
                           <button title="تصحيح" onClick={() => { setShowAdj(item); setAdjType('correction'); setAdjQty(''); setAdjReason('') }}
-                            style={{ padding: '5px 8px', background: P.bg2, border: `1px solid ${P.borderM}`, borderRadius: 7, color: P.muted, cursor: 'pointer', fontSize: 11, fontFamily: 'Tajawal,sans-serif', fontWeight: 700 }}>✎</button>
+                            style={{ padding: '5px 8px', background: P.bg2, border: `1px solid ${P.borderM}`, borderRadius: 7, color: P.muted, cursor: 'pointer', fontSize: 11, fontFamily: 'Cairo,sans-serif', fontWeight: 700 }}>✎</button>
                           {item.type === 'premade' && (
                             <>
                               <button title="تعديل" onClick={() => { setShowEdit(item); setEditName(item.name); setEditUnit(item.unit) }}
-                                style={{ padding: '5px 8px', background: `${P.blue}12`, border: `1px solid ${P.blue}30`, borderRadius: 7, color: P.blue, cursor: 'pointer', fontSize: 11, fontFamily: 'Tajawal,sans-serif', fontWeight: 700 }}>📝</button>
+                                style={{ padding: '5px 8px', background: `${P.blue}12`, border: `1px solid ${P.blue}30`, borderRadius: 7, color: P.blue, cursor: 'pointer', fontSize: 11, fontFamily: 'Cairo,sans-serif', fontWeight: 700 }}>📝</button>
                               <button title="حذف" onClick={() => setShowDelete(item)}
-                                style={{ padding: '5px 8px', background: P.roseXL, border: `1px solid ${P.roseL}`, borderRadius: 7, color: P.rose, cursor: 'pointer', fontSize: 11, fontFamily: 'Tajawal,sans-serif', fontWeight: 700 }}>🗑</button>
+                                style={{ padding: '5px 8px', background: P.roseXL, border: `1px solid ${P.roseL}`, borderRadius: 7, color: P.rose, cursor: 'pointer', fontSize: 11, fontFamily: 'Cairo,sans-serif', fontWeight: 700 }}>🗑</button>
                             </>
                           )}
                         </div>
@@ -286,7 +286,7 @@ export function KitchenStockPanel() {
                 border: `1.5px solid ${adjType === t.k ? t.c : P.border}`,
                 background: adjType === t.k ? t.bg : 'transparent',
                 color: adjType === t.k ? t.c : P.muted, cursor: 'pointer',
-                fontSize: 13, fontWeight: adjType === t.k ? 800 : 400, fontFamily: 'Tajawal,sans-serif',
+                fontSize: 13, fontWeight: adjType === t.k ? 800 : 400, fontFamily: 'Cairo,sans-serif',
               }}>{t.l}</button>
             ))}
           </div>
@@ -340,7 +340,7 @@ export function KitchenStockPanel() {
                 {dbUnits.map((u: any) => <option key={u.id} value={u.id}>{u.name} ({u.id})</option>)}
               </select>
               <button onClick={() => setShowNewUnit(!showNewUnit)} title="إنشاء وحدة جديدة"
-                style={{ padding: '8px 10px', borderRadius: 8, border: `1.5px solid ${showNewUnit ? P.purple : P.border}`, background: showNewUnit ? P.purpleXL : P.bg2, color: P.purple, cursor: 'pointer', fontSize: 14, fontWeight: 800, fontFamily: 'Tajawal,sans-serif', whiteSpace: 'nowrap' }}>+</button>
+                style={{ padding: '8px 10px', borderRadius: 8, border: `1.5px solid ${showNewUnit ? P.purple : P.border}`, background: showNewUnit ? P.purpleXL : P.bg2, color: P.purple, cursor: 'pointer', fontSize: 14, fontWeight: 800, fontFamily: 'Cairo,sans-serif', whiteSpace: 'nowrap' }}>+</button>
             </div>
           </Field>
           {showNewUnit && (
@@ -386,7 +386,7 @@ export function KitchenStockPanel() {
                 {dbUnits.map((u: any) => <option key={u.id} value={u.id}>{u.name} ({u.id})</option>)}
               </select>
               <button onClick={() => setShowNewUnit(!showNewUnit)} title="إنشاء وحدة جديدة"
-                style={{ padding: '8px 10px', borderRadius: 8, border: `1.5px solid ${showNewUnit ? P.purple : P.border}`, background: showNewUnit ? P.purpleXL : P.bg2, color: P.purple, cursor: 'pointer', fontSize: 14, fontWeight: 800, fontFamily: 'Tajawal,sans-serif' }}>+</button>
+                style={{ padding: '8px 10px', borderRadius: 8, border: `1.5px solid ${showNewUnit ? P.purple : P.border}`, background: showNewUnit ? P.purpleXL : P.bg2, color: P.purple, cursor: 'pointer', fontSize: 14, fontWeight: 800, fontFamily: 'Cairo,sans-serif' }}>+</button>
             </div>
           </Field>
           {showNewUnit && (

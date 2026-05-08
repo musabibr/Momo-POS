@@ -50,8 +50,8 @@ export function Sidebar({ active, onChange, collapsed, role, permissions, employ
               style={{
                 display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 11px', borderRadius: 11, border: 'none',
                 background: isA ? `${n.accent}14` : 'transparent', color: isA ? n.accent : P.muted,
-                cursor: 'pointer', textAlign: 'right', fontSize: 16, fontWeight: isA ? 800 : 400,
-                fontFamily: 'Tajawal,sans-serif', boxShadow: isA ? `inset 0 0 0 1px ${n.accent}30` : 'none',
+                cursor: 'pointer', textAlign: 'right', fontSize: 17, fontWeight: isA ? 900 : 500,
+                fontFamily: 'Cairo,sans-serif', boxShadow: isA ? `inset 0 0 0 1px ${n.accent}30` : 'none',
                 justifyContent: collapsed ? 'center' : 'flex-start'
               }}>
               <div style={{
@@ -81,7 +81,7 @@ export function Sidebar({ active, onChange, collapsed, role, permissions, employ
                   fontSize: 13, fontWeight: 800, color: ROLE_COLORS[employee.role] || P.muted, flexShrink: 0
                 }}>{employee.name?.[0] || '?'}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: P.plum, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{employee.name}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: P.plum, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{employee.name}</div>
                   <div style={{ fontSize: 11, color: ROLE_COLORS[employee.role] || P.muted, fontWeight: 600 }}>{ROLE_LABELS[employee.role] || employee.role}</div>
                 </div>
                 {onLogout && (

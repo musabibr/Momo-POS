@@ -42,7 +42,7 @@ export const ItemForm = ({ data, setData, onSave, onClose, title, rootCats, subC
                   ? `linear-gradient(135deg, ${P.purple}, ${P.purpleL})`
                   : 'transparent',
                 color: displayMode === k ? '#fff' : P.muted,
-                fontFamily: 'Tajawal,sans-serif',
+                fontFamily: 'Cairo,sans-serif',
                 transition: 'all .15s ease',
               }}
             >

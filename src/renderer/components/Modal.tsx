@@ -66,7 +66,7 @@ export function Modal({ title, onClose, children, width = 440, icon, open = true
                 <Icon name={icon} size={18} color={P.purple} />
               </div>
             )}
-            <span id="modal-title" style={{ fontWeight: 800, fontSize: 19, color: P.plum, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span id="modal-title" style={{ fontWeight: 800, fontSize: 21, color: P.plum, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {title}
             </span>
           </div>

@@ -269,7 +269,7 @@ export function UsersScreen() {
               </Field>
 
               <Field label="المسمى الوظيفي">
-                <select value={role} onChange={(e: any) => setRole(e.target.value)} style={{ width: '100%', height: 44, borderRadius: 10, background: P.bg, border: `1px solid ${P.border}`, color: P.plum, fontSize: 15, padding: '0 12px', outline: 'none', fontFamily: 'Tajawal, sans-serif' }}>
+                <select value={role} onChange={(e: any) => setRole(e.target.value)} style={{ width: '100%', height: 44, borderRadius: 10, background: P.bg, border: `1px solid ${P.border}`, color: P.plum, fontSize: 15, padding: '0 12px', outline: 'none', fontFamily: 'Cairo, sans-serif' }}>
                   {ROLES.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
                 </select>
                 <div style={{ fontSize: 12, color: P.muted, marginTop: 4 }}>المسمى الوظيفي لا يؤثر على الصلاحيات، استخدم الجدول لتحديد الصلاحيات الفردية.</div>

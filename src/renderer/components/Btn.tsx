@@ -36,9 +36,9 @@ export function Btn({ children, onClick, variant = 'primary', size = 'md', disab
       className={`momo-btn ${cfg.cls}`}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-        padding: pad, borderRadius: 11, fontSize: 14, fontWeight: 700,
+        padding: pad, borderRadius: 11, fontSize: 15, fontWeight: 800,
         cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.45 : 1,
-        fontFamily: 'Tajawal, sans-serif',
+        fontFamily: 'Cairo, sans-serif',
         background: cfg.bg, color: cfg.color, border: cfg.border,
         width: isFull ? '100%' : 'auto',
         ...style

@@ -134,7 +134,7 @@ export function PurchaseOrdersTab() {
                     background: poLines.some(l => l.itemId === ing.id) ? P.ghost : '#fff', 
                     color: poLines.some(l => l.itemId === ing.id) ? P.faint : P.gold, 
                     cursor: poLines.some(l => l.itemId === ing.id) ? 'default' : 'pointer', 
-                    fontFamily: 'Tajawal,sans-serif', fontWeight: 700,
+                    fontFamily: 'Cairo,sans-serif', fontWeight: 700,
                     transition: 'all 0.2s',
                     boxShadow: poLines.some(l => l.itemId === ing.id) ? 'none' : '0 2px 4px rgba(0,0,0,0.05)'
                   }}>
@@ -195,12 +195,12 @@ export function PurchaseOrdersTab() {
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: P.ghost, padding: 8, borderRadius: 8 }}>
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                       <span style={{ fontSize: 11, color: P.muted, marginBottom: 4, fontWeight: 700 }}>الكمية ({line.unit})</span>
-                      <input type="number" min={0.1} step={0.1} value={line.qty} onChange={e => setPoLines(p => p.map((l, j) => j === i ? { ...l, qty: parseFloat(e.target.value) || 0 } : l))} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: `1px solid ${P.border}`, fontSize: 14, outline: 'none', fontFamily: 'Tajawal,sans-serif', fontWeight: 700, textAlign: 'center' }} />
+                      <input type="number" min={0.1} step={0.1} value={line.qty} onChange={e => setPoLines(p => p.map((l, j) => j === i ? { ...l, qty: parseFloat(e.target.value) || 0 } : l))} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: `1px solid ${P.border}`, fontSize: 14, outline: 'none', fontFamily: 'Cairo,sans-serif', fontWeight: 700, textAlign: 'center' }} />
                     </div>
                     <div style={{ color: P.muted, fontSize: 16, marginTop: 16 }}>×</div>
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                       <span style={{ fontSize: 11, color: P.muted, marginBottom: 4, fontWeight: 700 }}>سعر الوحدة</span>
-                      <input type="number" min={0} value={line.unitCost} onChange={e => setPoLines(p => p.map((l, j) => j === i ? { ...l, unitCost: parseFloat(e.target.value) || 0 } : l))} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: `1px solid ${P.border}`, fontSize: 14, outline: 'none', fontFamily: 'Tajawal,sans-serif', fontWeight: 700, textAlign: 'center' }} />
+                      <input type="number" min={0} value={line.unitCost} onChange={e => setPoLines(p => p.map((l, j) => j === i ? { ...l, unitCost: parseFloat(e.target.value) || 0 } : l))} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: `1px solid ${P.border}`, fontSize: 14, outline: 'none', fontFamily: 'Cairo,sans-serif', fontWeight: 700, textAlign: 'center' }} />
                     </div>
                     <div style={{ color: P.muted, fontSize: 16, marginTop: 16 }}>=</div>
                     <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

@@ -195,7 +195,7 @@ export function MenuScreen() {
                     padding: '6px 14px', borderRadius: 99, fontSize: 12, fontWeight: active ? 800 : 500, cursor: 'pointer',
                     border: `1.5px solid ${active ? c.color : P.borderM}`,
                     background: active ? `linear-gradient(135deg, ${c.color}, ${c.color}cc)` : P.surface,
-                    color: active ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif',
+                    color: active ? '#fff' : P.muted, fontFamily: 'Cairo,sans-serif',
                     boxShadow: active ? `0 2px 10px ${c.color}30` : 'none'
                   }}>
                     {c.name} <span style={{ opacity: 0.7, fontSize: 10 }}>({c.count})</span>

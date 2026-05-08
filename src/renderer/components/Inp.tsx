@@ -19,8 +19,8 @@ export function Inp({ label, style, hint, required, ...rest }: InpProps) {
       style={{
         width: '100%', background: rest.readOnly ? P.bg3 : P.bg2,
         border: `1.5px solid ${P.border}`, borderRadius: 10, padding: '9px 13px',
-        color: P.plum, fontSize: 15, outline: 'none',
-        fontFamily: 'Tajawal, sans-serif', transition: 'border .15s',
+        color: P.plum, fontSize: 16, outline: 'none',
+        fontFamily: 'Cairo, sans-serif', transition: 'border .15s',
         ...style
       }}
       onFocus={(e) => { if (!rest.readOnly) e.target.style.borderColor = P.borderS; rest.onFocus?.(e) }}

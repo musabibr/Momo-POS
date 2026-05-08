@@ -76,7 +76,7 @@ const VariationModal = ({ item, onConfirm, onClose }: any) => {
                     padding: '7px 14px', borderRadius: 99, fontSize: 13, fontWeight: 700, cursor: 'pointer',
                     border: `1.5px solid ${isActive ? accentColor : P.borderM}`,
                     background: isActive ? `${accentColor}12` : P.surface,
-                    color: isActive ? accentColor : P.muted, fontFamily: 'Tajawal,sans-serif'
+                    color: isActive ? accentColor : P.muted, fontFamily: 'Cairo,sans-serif'
                   }}>
                   {opt.name}{opt.priceAdj > 0 && <span style={{ fontSize: 10.5, marginRight: 4, color: isActive ? P.pinkL : P.faint }}>+{opt.priceAdj}</span>}
                 </button>
@@ -313,55 +313,58 @@ export function POSScreen() {
   }
 
   if (receipt) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: `linear-gradient(180deg,${P.bg2},${P.bg})`, gap: 20, padding: 20, position: 'relative' }}>
-      <button onClick={() => setReceipt(null)} style={{ position: 'absolute', top: 16, left: 16, width: 36, height: 36, borderRadius: '50%', border: `1.5px solid ${P.borderM}`, background: P.surface, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,.08)' }}>
-        <Icon name="close" size={16} color={P.muted} />
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: `linear-gradient(180deg,${P.bg2},${P.bg})`, gap: 24, padding: 24, position: 'relative' }}>
+      <button onClick={() => setReceipt(null)} style={{ position: 'absolute', top: 18, left: 18, width: 40, height: 40, borderRadius: '50%', border: `1.5px solid ${P.borderM}`, background: P.surface, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,.08)' }}>
+        <Icon name="close" size={18} color={P.muted} />
       </button>
       <div style={{ textAlign: 'center' }}>
-        <div className="pulse-check" style={{ width: 72, height: 72, borderRadius: '50%', background: P.greenXL, border: `2.5px solid ${P.greenL}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', boxShadow: '0 8px 28px rgba(4,120,87,.25)' }}>
-          <Icon name="check" size={32} color={P.green} />
+        <div className="pulse-check" style={{ width: 80, height: 80, borderRadius: '50%', background: P.greenXL, border: `3px solid ${P.greenL}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 8px 28px rgba(4,120,87,.25)' }}>
+          <Icon name="check" size={36} color={P.green} />
         </div>
-        <div style={{ fontSize: 26, fontWeight: 900, color: P.plum }}>تم تأكيد الطلب</div>
-        <div style={{ color: P.muted, fontSize: 14, marginTop: 4 }}>طلب #{receipt.num} · {receipt.time}</div>
-        <span style={{ display: 'inline-block', marginTop: 6, padding: '3px 14px', borderRadius: 99, fontSize: 13, fontWeight: 700, background: receipt.orderType === 'takeaway' ? P.goldXL : P.greenXL, color: receipt.orderType === 'takeaway' ? P.gold : P.green, border: `1px solid ${receipt.orderType === 'takeaway' ? P.goldL : P.greenL}` }}>{receipt.orderType === 'takeaway' ? 'سفري' : 'محلي'}</span>
+        <div style={{ fontSize: 30, fontWeight: 900, color: P.plum, letterSpacing: '-0.02em' }}>تم تأكيد الطلب</div>
+        <div style={{ color: P.muted, fontSize: 16, marginTop: 6, fontWeight: 600 }}>طلب #{receipt.num} · {receipt.time}</div>
+        <span style={{ display: 'inline-block', marginTop: 8, padding: '5px 18px', borderRadius: 99, fontSize: 15, fontWeight: 800, background: receipt.orderType === 'takeaway' ? P.goldXL : P.greenXL, color: receipt.orderType === 'takeaway' ? P.gold : P.green, border: `1.5px solid ${receipt.orderType === 'takeaway' ? P.goldL : P.greenL}` }}>{receipt.orderType === 'takeaway' ? 'سفري' : 'محلي'}</span>
       </div>
-      <Card style={{ width: 'min(420px,100%)', padding: 26, boxShadow: '0 8px 32px rgba(88,28,135,.1)' }}>
-        <div style={{ borderBottom: `1.5px dashed ${P.borderM}`, paddingBottom: 14, marginBottom: 14 }}>
+      <Card style={{ width: 'min(460px,100%)', padding: 32, boxShadow: '0 12px 48px rgba(88,28,135,.12)' }}>
+        {/* ── Items List ── */}
+        <div style={{ borderBottom: `2px dashed ${P.borderM}`, paddingBottom: 16, marginBottom: 16 }}>
           {receipt.items.map((it: any) => (
-            <div key={`${it.itemId ?? it.id}_${it.variationLabel ?? ''}`} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, marginBottom: 8 }}>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontWeight: 900, color: P.purple, background: P.purpleXL, padding: '2px 6px', borderRadius: 6, fontSize: 13, minWidth: 28, textAlign: 'center' }}>×{it.qty}</span>
-                  <span style={{ fontWeight: 700, color: P.plum, fontSize: 16 }}>{it.name}</span>
+            <div key={`${it.itemId ?? it.id}_${it.variationLabel ?? ''}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, padding: '6px 0' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontWeight: 900, color: P.purple, background: P.purpleXL, padding: '3px 8px', borderRadius: 7, fontSize: 15, minWidth: 32, textAlign: 'center', letterSpacing: '0.5px' }}>×{it.qty}</span>
+                  <span style={{ fontWeight: 800, color: P.plum, fontSize: 18 }}>{it.name}</span>
                 </div>
-                {it.variationLabel && <div style={{ fontSize: 12, color: P.muted, marginTop: 4, paddingRight: 36 }}>{it.variationLabel}</div>}
-                {it.note && <div style={{ fontSize: 12, color: P.pinkL, marginTop: 4, paddingRight: 36 }}>{it.note}</div>}
+                {it.variationLabel && <div style={{ fontSize: 14, color: P.muted, marginTop: 4, paddingRight: 42, fontWeight: 600 }}>{it.variationLabel}</div>}
+                {it.note && <div style={{ fontSize: 14, color: P.pinkL, marginTop: 4, paddingRight: 42, fontWeight: 600 }}>{it.note}</div>}
               </div>
-              <span style={{ color: P.purple, fontWeight: 800, fontSize: 15 }}>{((it.unitPrice || it.price) * it.qty).toLocaleString()}</span>
+              <span style={{ color: P.purple, fontWeight: 900, fontSize: 17, whiteSpace: 'nowrap' }}>{((it.unitPrice || it.price) * it.qty).toLocaleString()}</span>
             </div>
           ))}
         </div>
-        {receipt.orderNote && <div style={{ fontSize: 13, color: P.gold, background: P.goldXL, borderRadius: 8, padding: '6px 12px', marginBottom: 10 }}>📝 {receipt.orderNote}</div>}
-        {receipt.discAmt > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: P.pink, marginBottom: 6 }}><span>خصم</span><span>−{receipt.discAmt.toLocaleString()} ج.س</span></div>}
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 22, fontWeight: 900, marginBottom: 16, color: P.plum }}>
+        {/* ── Order Note ── */}
+        {receipt.orderNote && <div style={{ fontSize: 15, color: P.gold, background: P.goldXL, borderRadius: 10, padding: '8px 14px', marginBottom: 12, fontWeight: 700 }}>📝 {receipt.orderNote}</div>}
+        {/* ── Discount ── */}
+        {receipt.discAmt > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, color: P.pink, marginBottom: 8, fontWeight: 700 }}><span>خصم</span><span>−{receipt.discAmt.toLocaleString()} ج.س</span></div>}
+        {/* ── Total — hero row ── */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 28, fontWeight: 900, marginBottom: 18, color: P.plum, padding: '8px 0', borderTop: `2px solid ${P.border}`, borderBottom: `2px solid ${P.border}` }}>
           <span>الإجمالي</span><span style={{ color: P.purple }}>{receipt.total.toLocaleString()} ج.س</span>
         </div>
-        {/* Order type highlight */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, marginBottom: 12, background: receipt.orderType === 'takeaway' ? P.goldXL : P.greenXL, border: `1.5px solid ${receipt.orderType === 'takeaway' ? P.goldL : P.greenL}` }}>
-          <span style={{ fontSize: 20 }}>{receipt.orderType === 'takeaway' ? '🛍️' : '🏠'}</span>
-          <span style={{ fontSize: 16, fontWeight: 900, color: receipt.orderType === 'takeaway' ? P.gold : P.green }}>{receipt.orderType === 'takeaway' ? 'طلب سفري' : 'طلب محلي'}{receipt.tableNum ? ` · طاولة ${receipt.tableNum}` : ''}</span>
+        {/* ── Order type highlight ── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '12px 16px', borderRadius: 12, marginBottom: 14, background: receipt.orderType === 'takeaway' ? P.goldXL : P.greenXL, border: `1.5px solid ${receipt.orderType === 'takeaway' ? P.goldL : P.greenL}` }}>
+          <span style={{ fontSize: 22 }}>{receipt.orderType === 'takeaway' ? '🛍️' : '🏠'}</span>
+          <span style={{ fontSize: 18, fontWeight: 900, color: receipt.orderType === 'takeaway' ? P.gold : P.green }}>{receipt.orderType === 'takeaway' ? 'طلب سفري' : 'طلب محلي'}{receipt.tableNum ? ` · طاولة ${receipt.tableNum}` : ''}</span>
         </div>
-        <div style={{ fontSize: 14, color: P.muted, background: P.bg2, borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
+        {/* ── Payment summary ── */}
+        <div style={{ fontSize: 16, color: P.muted, background: P.bg2, borderRadius: 12, padding: '12px 16px', marginBottom: 18, fontWeight: 700, lineHeight: 1.6 }}>
           {receipt.payMode === 'split' ? `مقسّم: نقداً ${parseInt(receipt.cashPart || '0').toLocaleString()} + بنك ${receipt.bankPart.toLocaleString()} ج.س ${receipt.bank ? `(${receipt.bank})` : ''}`
             : receipt.payMode === 'bank' ? `تحويل بنكي · ${receipt.bank}`
               : `نقداً · الباقي: ${receipt.change.toLocaleString()} ج.س`}
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Btn variant="secondary" icon="print" fullWidth onClick={() => { api?.printer?.print?.(receipt).catch(() => {}); api?.printer?.printKitchen?.(receipt).catch(() => {}); toast('جاري الطباعة…') }}>طباعة</Btn>
-          <Btn variant="ghost" fullWidth onClick={() => { api?.printer?.previewPDF?.(receipt).catch(() => {}); toast('جاري فتح المعاينة…') }} style={{ border: `1.5px solid ${P.borderM}`, color: P.purple }}>📄 معاينة PDF</Btn>
-        </div>
+        {/* ── Print button (single, prominent) ── */}
+        <Btn variant="primary" icon="print" fullWidth size="lg" onClick={() => { api?.printer?.print?.(receipt).catch(() => {}); api?.printer?.printKitchen?.(receipt).catch(() => {}); toast('جاري الطباعة…') }}>طباعة الإيصال</Btn>
       </Card>
-      <div style={{ marginTop: 8 }}>
+      <div style={{ marginTop: 6 }}>
         <Btn variant="primary" size="lg" onClick={() => setReceipt(null)}>طلب جديد +</Btn>
       </div>
     </div>
@@ -412,7 +415,7 @@ export function POSScreen() {
             <div style={{ fontSize: 20, fontWeight: 900, color: P.plum }}>الطلب الحالي</div>
             <div style={{ display: 'flex', borderRadius: 10, overflow: 'hidden', border: `1.5px solid ${P.borderM}` }}>
               {([['local','محلي'],['takeaway','سفري']] as const).map(([k,l]) => (
-                <button key={k} onClick={() => { setOrderType(k as any); if(k === 'takeaway') setTableNum(''); }} style={{ padding: '5px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: 'none', background: orderType === k ? (k === 'takeaway' ? P.gold : P.green) : 'transparent', color: orderType === k ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>{l}</button>
+                <button key={k} onClick={() => { setOrderType(k as any); if(k === 'takeaway') setTableNum(''); }} style={{ padding: '5px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: 'none', background: orderType === k ? (k === 'takeaway' ? P.gold : P.green) : 'transparent', color: orderType === k ? '#fff' : P.muted, fontFamily: 'Cairo,sans-serif' }}>{l}</button>
               ))}
             </div>
           </div>
@@ -501,19 +504,19 @@ export function POSScreen() {
           {/* Order note & Table */}
           {!showPay && <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
             {orderType === 'local' && (
-              <input value={tableNum} onChange={e => setTableNum(e.target.value)} placeholder="رقم الطاولة" style={{ width: 100, padding: '9px 14px', borderRadius: 10, border: `1.5px solid ${P.borderM}`, fontSize: 15, outline: 'none', fontFamily: 'Tajawal,sans-serif', background: tableNum ? P.greenXL : 'transparent', color: tableNum ? P.green : P.plum, fontWeight: tableNum ? 800 : 400, textAlign: 'center' }} />
+              <input value={tableNum} onChange={e => setTableNum(e.target.value)} placeholder="رقم الطاولة" style={{ width: 100, padding: '9px 14px', borderRadius: 10, border: `1.5px solid ${P.borderM}`, fontSize: 15, outline: 'none', fontFamily: 'Cairo,sans-serif', background: tableNum ? P.greenXL : 'transparent', color: tableNum ? P.green : P.plum, fontWeight: tableNum ? 800 : 400, textAlign: 'center' }} />
             )}
-            <input value={orderNote} onChange={e => setOrderNote(e.target.value)} placeholder="ملاحظة على الطلب…" style={{ flex: 1, padding: '9px 14px', borderRadius: 10, border: `1px solid ${P.border}`, fontSize: 15, outline: 'none', fontFamily: 'Tajawal,sans-serif', background: orderNote ? P.goldXL : 'transparent', color: P.plum }} />
+            <input value={orderNote} onChange={e => setOrderNote(e.target.value)} placeholder="ملاحظة على الطلب…" style={{ flex: 1, padding: '9px 14px', borderRadius: 10, border: `1px solid ${P.border}`, fontSize: 15, outline: 'none', fontFamily: 'Cairo,sans-serif', background: orderNote ? P.goldXL : 'transparent', color: P.plum }} />
           </div>}
 
-          {!showPay && order.length > 0 && <button onClick={() => setShowDiscount(!showDiscount)} style={{ width: '100%', padding: '10px', borderRadius: 10, border: `1.5px dashed ${discAmt > 0 ? P.pinkL : P.borderM}`, background: discAmt > 0 ? P.pinkXL : 'transparent', color: P.pink, cursor: 'pointer', fontSize: 15, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'Tajawal,sans-serif' }}>
+          {!showPay && order.length > 0 && <button onClick={() => setShowDiscount(!showDiscount)} style={{ width: '100%', padding: '10px', borderRadius: 10, border: `1.5px dashed ${discAmt > 0 ? P.pinkL : P.borderM}`, background: discAmt > 0 ? P.pinkXL : 'transparent', color: P.pink, cursor: 'pointer', fontSize: 15, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'Cairo,sans-serif' }}>
             <Icon name="tag" size={15} color={P.pink} />{discAmt > 0 ? `خصم: ${discount}${discountType === 'pct' ? '%' : ' ج.س'}` : 'إضافة خصم'}
           </button>}
 
           {showDiscount && !showPay && <div style={{ background: P.pinkXL, border: `1px solid ${P.pinkL}50`, borderRadius: 12, padding: 12, marginBottom: 10 }}>
             <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
               {[{ k: 'pct', l: 'نسبة %' }, { k: 'amt', l: 'مبلغ ثابت' }].map(t => (
-                <button key={t.k} onClick={() => { setDiscountType(t.k); setDiscount(0); }} style={{ flex: 1, padding: '8px', borderRadius: 8, border: `1.5px solid ${discountType === t.k ? P.pink : P.pinkL}`, background: discountType === t.k ? P.pink : 'transparent', color: discountType === t.k ? '#fff' : P.pink, cursor: 'pointer', fontSize: 14, fontWeight: 700, fontFamily: 'Tajawal,sans-serif' }}>{t.l}</button>
+                <button key={t.k} onClick={() => { setDiscountType(t.k); setDiscount(0); }} style={{ flex: 1, padding: '8px', borderRadius: 8, border: `1.5px solid ${discountType === t.k ? P.pink : P.pinkL}`, background: discountType === t.k ? P.pink : 'transparent', color: discountType === t.k ? '#fff' : P.pink, cursor: 'pointer', fontSize: 14, fontWeight: 700, fontFamily: 'Cairo,sans-serif' }}>{t.l}</button>
               ))}
             </div>
             <Inp value={String(discount)} onChange={(e: any) => {
@@ -532,16 +535,16 @@ export function POSScreen() {
             <div>
               <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
                 {[{ k: 'cash', l: '💵 نقداً' }, { k: 'bank', l: '🏦 بنكي' }, { k: 'split', l: '🔀 مقسم' }].map(({ k, l }) => (
-                  <button key={k} onClick={() => setPayMode(k)} className="pos-pay-btn" style={{ flex: 1, padding: '11px 6px', borderRadius: 11, border: `1.5px solid ${payMode === k ? P.purple : P.borderM}`, background: payMode === k ? P.ghost : 'transparent', color: payMode === k ? P.purple : P.muted, cursor: 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'Tajawal,sans-serif' }}>{l}</button>
+                  <button key={k} onClick={() => setPayMode(k)} className="pos-pay-btn" style={{ flex: 1, padding: '11px 6px', borderRadius: 11, border: `1.5px solid ${payMode === k ? P.purple : P.borderM}`, background: payMode === k ? P.ghost : 'transparent', color: payMode === k ? P.purple : P.muted, cursor: 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'Cairo,sans-serif' }}>{l}</button>
                 ))}
               </div>
               {payMode === 'cash' && <div style={{ marginBottom: 10 }}>
                 <Inp value={cashIn} onChange={(e: any) => { const v = +e.target.value; setCashIn(String(isNaN(v) || v < 0 ? '' : Math.min(v, total))) }} placeholder={`المبلغ المستلم (الحد: ${total.toLocaleString()})`} type="number" max={total} />
                 <div style={{ display: 'flex', gap: 5, marginTop: 6, flexWrap: 'wrap' }}>
                   {DENOMS.filter(d => d <= total).map(d => (
-                    <button key={d} className="pos-denom-btn" onClick={() => setCashIn(String(d))} style={{ flex: 1, minWidth: 54, padding: '8px 4px', borderRadius: 9, border: `1px solid ${P.greenL}`, background: P.greenXL, color: P.green, cursor: 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'Tajawal,sans-serif' }}>{d.toLocaleString()}</button>
+                    <button key={d} className="pos-denom-btn" onClick={() => setCashIn(String(d))} style={{ flex: 1, minWidth: 54, padding: '8px 4px', borderRadius: 9, border: `1px solid ${P.greenL}`, background: P.greenXL, color: P.green, cursor: 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'Cairo,sans-serif' }}>{d.toLocaleString()}</button>
                   ))}
-                  <button className="pos-denom-btn" onClick={() => setCashIn(String(total))} style={{ flex: 1, minWidth: 54, padding: '8px 4px', borderRadius: 9, border: `1px solid ${P.purpleXL}`, background: `${P.purple}08`, color: P.purple, cursor: 'pointer', fontSize: 14, fontWeight: 700, fontFamily: 'Tajawal,sans-serif' }}>بالضبط</button>
+                  <button className="pos-denom-btn" onClick={() => setCashIn(String(total))} style={{ flex: 1, minWidth: 54, padding: '8px 4px', borderRadius: 9, border: `1px solid ${P.purpleXL}`, background: `${P.purple}08`, color: P.purple, cursor: 'pointer', fontSize: 14, fontWeight: 700, fontFamily: 'Cairo,sans-serif' }}>بالضبط</button>
                 </div>
                 {cashIn && parseInt(cashIn) >= total && <div style={{ fontSize: 16, color: P.green, marginTop: 8, fontWeight: 900, textAlign: 'center', background: P.greenXL, borderRadius: 10, padding: '10px 0' }}>✓ المبلغ مكتمل</div>}
               </div>}
@@ -567,7 +570,7 @@ export function POSScreen() {
         <div style={{ display: 'flex', gap: 9, marginBottom: 12, flexWrap: 'wrap' }}>
           <div style={{ flex: '1 1 240px', display: 'flex', alignItems: 'center', gap: 8, background: P.surface, border: `1.5px solid ${P.border}`, borderRadius: 12, padding: '8px 13px', boxShadow: '0 1px 4px rgba(88,28,135,.06)', minWidth: 0 }}>
             <Icon name="search" size={15} color={P.muted} />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث في القائمة…" style={{ border: 'none', background: 'transparent', color: P.plum, fontSize: 16, outline: 'none', flex: 1, minWidth: 0, fontFamily: 'Tajawal,sans-serif' }} />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث في القائمة…" style={{ border: 'none', background: 'transparent', color: P.plum, fontSize: 16, outline: 'none', flex: 1, minWidth: 0, fontFamily: 'Cairo,sans-serif' }} />
             {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}><Icon name="close" size={14} color={P.faint} /></button>}
           </div>
           <button onClick={() => setShowCustModal(true)} style={{
@@ -576,7 +579,7 @@ export function POSScreen() {
             border: `1.5px solid ${custMatch ? P.green : P.border}`,
             borderRadius: 12, padding: '8px 14px',
             boxShadow: '0 1px 4px rgba(88,28,135,.06)',
-            cursor: 'pointer', fontFamily: 'Tajawal,sans-serif', fontSize: 15, fontWeight: 600,
+            cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontSize: 15, fontWeight: 600,
             color: custMatch ? P.green : P.muted,
           }}>
             <Icon name={custMatch ? 'check' : 'plus'} size={14} color={custMatch ? P.green : P.muted} />
@@ -586,17 +589,17 @@ export function POSScreen() {
         </div>
         {/* Category pills */}
         <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 8 }}>
-          <button onClick={() => { setCatId('all'); setSubcatId(null); }} className="momo-pill" style={{ padding: '8px 20px', borderRadius: 99, fontSize: 15, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${catId === 'all' ? P.purple : P.borderM}`, background: catId === 'all' ? 'linear-gradient(135deg,#9333ea,#7c3aed)' : P.surface, color: catId === 'all' ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>الكل</button>
+          <button onClick={() => { setCatId('all'); setSubcatId(null); }} className="momo-pill" style={{ padding: '8px 20px', borderRadius: 99, fontSize: 15, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${catId === 'all' ? P.purple : P.borderM}`, background: catId === 'all' ? 'linear-gradient(135deg,#9333ea,#7c3aed)' : P.surface, color: catId === 'all' ? '#fff' : P.muted, fontFamily: 'Cairo,sans-serif' }}>الكل</button>
           {rootCats.map(c => (
-            <button key={c.id} onClick={() => { setCatId(c.id); setSubcatId(null); }} className="momo-pill" style={{ padding: '8px 20px', borderRadius: 99, fontSize: 15, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${catId === c.id ? c.color : P.borderM}`, background: catId === c.id ? c.color : P.surface, color: catId === c.id ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>{c.emoji ? c.emoji + ' ' : ''}{c.name}</button>
+            <button key={c.id} onClick={() => { setCatId(c.id); setSubcatId(null); }} className="momo-pill" style={{ padding: '8px 20px', borderRadius: 99, fontSize: 15, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${catId === c.id ? c.color : P.borderM}`, background: catId === c.id ? c.color : P.surface, color: catId === c.id ? '#fff' : P.muted, fontFamily: 'Cairo,sans-serif' }}>{c.emoji ? c.emoji + ' ' : ''}{c.name}</button>
           ))}
         </div>
         {/* Subcategory pills */}
         {subCats.length > 0 && <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8, paddingRight: 4 }}>
           <div style={{ fontSize: 11, color: P.faint, display: 'flex', alignItems: 'center', gap: 4, marginLeft: 4 }}><Icon name="layers" size={12} color={P.faint} /> فئة فرعية:</div>
-          <button onClick={() => setSubcatId(null)} className="momo-pill" style={{ padding: '4px 12px', borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: `1px solid ${!subcatId ? activeCat?.color || P.purple : P.borderM}`, background: !subcatId ? `${activeCat?.color || P.purple}15` : 'transparent', color: !subcatId ? activeCat?.color || P.purple : P.muted, fontFamily: 'Tajawal,sans-serif' }}>الكل</button>
+          <button onClick={() => setSubcatId(null)} className="momo-pill" style={{ padding: '4px 12px', borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: `1px solid ${!subcatId ? activeCat?.color || P.purple : P.borderM}`, background: !subcatId ? `${activeCat?.color || P.purple}15` : 'transparent', color: !subcatId ? activeCat?.color || P.purple : P.muted, fontFamily: 'Cairo,sans-serif' }}>الكل</button>
           {subCats.map((sc: any) => (
-            <button key={sc.id} onClick={() => setSubcatId(sc.id)} className="momo-pill" style={{ padding: '4px 12px', borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: `1px solid ${subcatId === sc.id ? sc.color : P.borderM}`, background: subcatId === sc.id ? `${sc.color}15` : 'transparent', color: subcatId === sc.id ? sc.color : P.muted, fontFamily: 'Tajawal,sans-serif' }}>{sc.name}</button>
+            <button key={sc.id} onClick={() => setSubcatId(sc.id)} className="momo-pill" style={{ padding: '4px 12px', borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: `1px solid ${subcatId === sc.id ? sc.color : P.borderM}`, background: subcatId === sc.id ? `${sc.color}15` : 'transparent', color: subcatId === sc.id ? sc.color : P.muted, fontFamily: 'Cairo,sans-serif' }}>{sc.name}</button>
           ))}
         </div>}
         {/* Items grid — scrollable container */}
@@ -604,7 +607,7 @@ export function POSScreen() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 165px)', justifyContent: 'center', gap: 16, padding: '16px' }}>
             {filtered.map(item => (
               <button key={item.id} onClick={() => handleItemClick(item)} className="pos-item-card"
-                style={{ width: 165, background: P.surface, border: `1.5px solid ${P.border}`, borderRadius: 16, padding: 0, cursor: 'pointer', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden', boxShadow: '0 2px 8px rgba(88,28,135,.06)', fontFamily: 'Tajawal,sans-serif' }}>
+                style={{ width: 165, background: P.surface, border: `1.5px solid ${P.border}`, borderRadius: 16, padding: 0, cursor: 'pointer', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden', boxShadow: '0 2px 8px rgba(88,28,135,.06)', fontFamily: 'Cairo,sans-serif' }}>
                 <div style={{ width: '100%', height: 165, overflow: 'hidden', flexShrink: 0, position: 'relative', background: `linear-gradient(135deg,${P.bg3},${P.purpleXL})` }}>
                   {(item.display_mode === 'image') && item.image_path
                     ? <img src={item.image_path} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }} onError={(e: any) => { e.target.style.display = 'none'; e.target.nextSibling && (e.target.nextSibling.style.display = 'flex') }} />
@@ -650,7 +653,7 @@ export function POSScreen() {
         {!showNewCust ? <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: P.bg2, borderRadius: 10, padding: '8px 12px', marginBottom: 12 }}>
             <Icon name="search" size={14} color={P.muted} />
-            <input value={custSearch} onChange={e => setCustSearch(e.target.value)} placeholder="ابحث بالاسم أو الرقم…" autoFocus style={{ border: 'none', background: 'transparent', color: P.plum, fontSize: 14, outline: 'none', flex: 1, fontFamily: 'Tajawal,sans-serif' }} />
+            <input value={custSearch} onChange={e => setCustSearch(e.target.value)} placeholder="ابحث بالاسم أو الرقم…" autoFocus style={{ border: 'none', background: 'transparent', color: P.plum, fontSize: 14, outline: 'none', flex: 1, fontFamily: 'Cairo,sans-serif' }} />
           </div>
           <div style={{ maxHeight: 220, overflowY: 'auto', marginBottom: 12 }}>
             {custResults.length > 0 ? custResults.map((c: any) => (

@@ -37,7 +37,7 @@ export function ReportsScreen() {
         <div><div style={{ fontSize: 20, fontWeight: 900, color: P.plum }}>التقارير والتحليلات</div></div>
         <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', alignItems: 'center' }}>
           {[{ k: 'today', l: 'اليوم' }, { k: 'week', l: 'أسبوع' }, { k: 'month', l: 'شهر' }, { k: 'custom', l: 'مخصص' }].map(r => (
-            <button key={r.k} onClick={() => setRange(r.k)} className="momo-pill" style={{ padding: '6px 14px', borderRadius: 99, fontSize: 14, fontWeight: range === r.k ? 800 : 500, cursor: 'pointer', border: `1.5px solid ${range === r.k ? P.purple : P.borderM}`, background: range === r.k ? P.purple : P.surface, color: range === r.k ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>{r.l}</button>
+            <button key={r.k} onClick={() => setRange(r.k)} className="momo-pill" style={{ padding: '6px 14px', borderRadius: 99, fontSize: 14, fontWeight: range === r.k ? 800 : 500, cursor: 'pointer', border: `1.5px solid ${range === r.k ? P.purple : P.borderM}`, background: range === r.k ? P.purple : P.surface, color: range === r.k ? '#fff' : P.muted, fontFamily: 'Cairo,sans-serif' }}>{r.l}</button>
           ))}
           {range === 'custom' && <>
             <div style={{ borderLeft: `1px solid ${P.border}`, margin: '0 4px', height: 24 }} />
@@ -603,9 +603,9 @@ function AuditLog({ filters }: any) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, overflow: 'hidden', minHeight: 0 }}>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        <button onClick={() => setFilterType('')} className="momo-pill" style={{ padding: '5px 14px', borderRadius: 99, fontSize: 13, fontWeight: !filterType ? 700 : 500, cursor: 'pointer', border: `1.5px solid ${!filterType ? P.purple : P.borderM}`, background: !filterType ? P.purple : P.surface, color: !filterType ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>الكل</button>
+        <button onClick={() => setFilterType('')} className="momo-pill" style={{ padding: '5px 14px', borderRadius: 99, fontSize: 13, fontWeight: !filterType ? 700 : 500, cursor: 'pointer', border: `1.5px solid ${!filterType ? P.purple : P.borderM}`, background: !filterType ? P.purple : P.surface, color: !filterType ? '#fff' : P.muted, fontFamily: 'Cairo,sans-serif' }}>الكل</button>
         {Object.entries(actionLabels).map(([k, v]) => (
-          <button key={k} onClick={() => setFilterType(k)} className="momo-pill" style={{ padding: '5px 14px', borderRadius: 99, fontSize: 13, fontWeight: filterType === k ? 700 : 500, cursor: 'pointer', border: `1.5px solid ${filterType === k ? P.purple : P.borderM}`, background: filterType === k ? P.purple : P.surface, color: filterType === k ? '#fff' : P.muted, fontFamily: 'Tajawal,sans-serif' }}>{v}</button>
+          <button key={k} onClick={() => setFilterType(k)} className="momo-pill" style={{ padding: '5px 14px', borderRadius: 99, fontSize: 13, fontWeight: filterType === k ? 700 : 500, cursor: 'pointer', border: `1.5px solid ${filterType === k ? P.purple : P.borderM}`, background: filterType === k ? P.purple : P.surface, color: filterType === k ? '#fff' : P.muted, fontFamily: 'Cairo,sans-serif' }}>{v}</button>
         ))}
       </div>
       <Card style={{ flex: 1, padding: 0, overflowY: 'auto', minHeight: 0 }}>

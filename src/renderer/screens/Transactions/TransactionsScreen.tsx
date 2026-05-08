@@ -150,7 +150,7 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
             { l: 'هذا الشهر', fn: () => setQuickDate(monthStart(), today()) },
             { l: 'الكل', fn: () => setQuickDate('', today()) },
           ].map(b => (
-            <button key={b.l} onClick={b.fn} style={{ padding: '7px 16px', borderRadius: 99, fontSize: 14, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${P.borderM}`, background: P.surface, color: P.purple, fontFamily: 'Tajawal,sans-serif' }}>{b.l}</button>
+            <button key={b.l} onClick={b.fn} style={{ padding: '7px 16px', borderRadius: 99, fontSize: 14, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${P.borderM}`, background: P.surface, color: P.purple, fontFamily: 'Cairo,sans-serif' }}>{b.l}</button>
           ))}
         </div>
         {/* Filter row */}
@@ -158,17 +158,17 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
           <div style={{ minWidth: 130 }}>
             <div style={{ fontSize: 13, color: P.muted, marginBottom: 3, fontWeight: 700 }}>من تاريخ</div>
             <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-              style={{ width: '100%', padding: '8px 10px', borderRadius: 9, border: `1.5px solid ${P.border}`, fontSize: 14, fontFamily: 'Tajawal,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }} />
+              style={{ width: '100%', padding: '8px 10px', borderRadius: 9, border: `1.5px solid ${P.border}`, fontSize: 14, fontFamily: 'Cairo,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }} />
           </div>
           <div style={{ minWidth: 130 }}>
             <div style={{ fontSize: 13, color: P.muted, marginBottom: 3, fontWeight: 700 }}>إلى تاريخ</div>
             <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-              style={{ width: '100%', padding: '8px 10px', borderRadius: 9, border: `1.5px solid ${P.border}`, fontSize: 14, fontFamily: 'Tajawal,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }} />
+              style={{ width: '100%', padding: '8px 10px', borderRadius: 9, border: `1.5px solid ${P.border}`, fontSize: 14, fontFamily: 'Cairo,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }} />
           </div>
           <div style={{ minWidth: 100 }}>
             <div style={{ fontSize: 13, color: P.muted, marginBottom: 3, fontWeight: 700 }}>الحالة</div>
             <select value={fStatus} onChange={e => setFStatus(e.target.value)}
-              style={{ width: '100%', padding: '8px 10px', borderRadius: 9, border: `1.5px solid ${P.border}`, fontSize: 14, fontFamily: 'Tajawal,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }}>
+              style={{ width: '100%', padding: '8px 10px', borderRadius: 9, border: `1.5px solid ${P.border}`, fontSize: 14, fontFamily: 'Cairo,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }}>
               <option value="all">الكل</option>
               <option value="confirmed">مؤكد</option>
               <option value="voided">ملغي</option>
@@ -177,7 +177,7 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
           <div style={{ minWidth: 110 }}>
             <div style={{ fontSize: 13, color: P.muted, marginBottom: 3, fontWeight: 700 }}>طريقة الدفع</div>
             <select value={fPayMode} onChange={e => setFPayMode(e.target.value)}
-              style={{ width: '100%', padding: '8px 10px', borderRadius: 9, border: `1.5px solid ${P.border}`, fontSize: 14, fontFamily: 'Tajawal,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }}>
+              style={{ width: '100%', padding: '8px 10px', borderRadius: 9, border: `1.5px solid ${P.border}`, fontSize: 14, fontFamily: 'Cairo,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }}>
               <option value="all">الكل</option>
               <option value="cash">نقداً</option>
               <option value="bank">تحويل بنكي</option>
@@ -187,7 +187,7 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
           <div style={{ minWidth: 100 }}>
             <div style={{ fontSize: 13, color: P.muted, marginBottom: 3, fontWeight: 700 }}>نوع الطلب</div>
             <select value={fOrderType} onChange={e => setFOrderType(e.target.value)}
-              style={{ width: '100%', padding: '8px 10px', borderRadius: 9, border: `1.5px solid ${P.border}`, fontSize: 14, fontFamily: 'Tajawal,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }}>
+              style={{ width: '100%', padding: '8px 10px', borderRadius: 9, border: `1.5px solid ${P.border}`, fontSize: 14, fontFamily: 'Cairo,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }}>
               <option value="all">الكل</option>
               <option value="local">محلي</option>
               <option value="takeaway">سفري</option>
@@ -197,7 +197,7 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
             <div style={{ minWidth: 130 }}>
               <div style={{ fontSize: 13, color: P.muted, marginBottom: 3, fontWeight: 700 }}>الموظف</div>
               <select value={fEmployee} onChange={e => setFEmployee(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: 9, border: `1.5px solid ${P.border}`, fontSize: 14, fontFamily: 'Tajawal,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }}>
+                style={{ width: '100%', padding: '8px 10px', borderRadius: 9, border: `1.5px solid ${P.border}`, fontSize: 14, fontFamily: 'Cairo,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }}>
                 <option value="all">جميع الموظفين</option>
                 {employees.filter(e => e.active !== 0).map((e: any) => <option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
@@ -206,7 +206,7 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
           <div style={{ minWidth: 100 }}>
             <div style={{ fontSize: 13, color: P.muted, marginBottom: 3, fontWeight: 700 }}>رقم الطلب</div>
             <input value={searchNum} onChange={e => setSearchNum(e.target.value.replace(/\D/g,''))} placeholder="بحث #"
-              style={{ width: '100%', padding: '8px 10px', borderRadius: 9, border: `1.5px solid ${P.border}`, fontSize: 14, fontFamily: 'Tajawal,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }} />
+              style={{ width: '100%', padding: '8px 10px', borderRadius: 9, border: `1.5px solid ${P.border}`, fontSize: 14, fontFamily: 'Cairo,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }} />
           </div>
         </div>
       </Card>
@@ -258,7 +258,7 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
           </Card>
         ) : orders.length > 0 && (
           <ResponsiveTable minWidth={700} stickyHeader>
-            <table style={{ width: '100%', minWidth: 700, borderCollapse: 'collapse', fontSize: 14, fontFamily: 'Tajawal,sans-serif' }}>
+            <table style={{ width: '100%', minWidth: 700, borderCollapse: 'collapse', fontSize: 14, fontFamily: 'Cairo,sans-serif' }}>
               <thead>
                 <tr style={{ background: P.bg2 }}>
                   {['#', 'التاريخ', 'النوع', 'الأصناف', 'الإجمالي', 'الدفع', ...(isManager ? ['الموظف'] : []), 'الحالة', ''].map(h => (
@@ -307,7 +307,7 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
                           {isVoided ? <Badge label="ملغي" color={P.rose} bg={P.roseXL} /> : <Badge label="مؤكد" color={P.green} bg={P.greenXL} />}
                         </td>
                         <td style={{ padding: '10px', textAlign: 'center' }}>
-                          <button onClick={e => { e.stopPropagation(); setSelected(o) }} style={{ padding: '3px 8px', borderRadius: 7, border: `1px solid ${P.border}`, background: P.surface, cursor: 'pointer', fontSize: 11, color: P.purple, fontWeight: 700, fontFamily: 'Tajawal,sans-serif' }} title="تفاصيل">⋯</button>
+                          <button onClick={e => { e.stopPropagation(); setSelected(o) }} style={{ padding: '3px 8px', borderRadius: 7, border: `1px solid ${P.border}`, background: P.surface, cursor: 'pointer', fontSize: 11, color: P.purple, fontWeight: 700, fontFamily: 'Cairo,sans-serif' }} title="تفاصيل">⋯</button>
                         </td>
                       </tr>
                       {isExpanded && (

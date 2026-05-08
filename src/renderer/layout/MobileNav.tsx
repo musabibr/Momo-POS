@@ -19,7 +19,7 @@ export function MobileNav({ active, onChange }: MobileNavProps) {
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
               padding: '4px 8px', borderRadius: 10, border: 'none', background: 'transparent',
               cursor: 'pointer', color: isA ? n.accent : P.faint,
-              fontFamily: 'Tajawal, sans-serif', fontSize: 10, fontWeight: isA ? 700 : 400
+              fontFamily: 'Cairo, sans-serif', fontSize: 10, fontWeight: isA ? 700 : 400
             }}>
             <Icon name={n.icon} size={20} color={isA ? n.accent : P.faint} />
             <span>{n.label.split(' ')[0]}</span>

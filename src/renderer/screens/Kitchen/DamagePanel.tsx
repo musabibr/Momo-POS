@@ -93,7 +93,7 @@ export function DamagePanel() {
               style={{
                 width: '100%', padding: '6px 10px', borderRadius: 10,
                 border: `1.5px solid ${P.border}`, background: P.surface,
-                fontSize: 11, fontFamily: 'Tajawal,sans-serif', color: P.ink,
+                fontSize: 11, fontFamily: 'Cairo,sans-serif', color: P.ink,
                 outline: 'none', direction: 'rtl', paddingRight: 28
               }}
               onFocus={e => e.currentTarget.style.borderColor = P.rose}
@@ -116,16 +116,16 @@ export function DamagePanel() {
           <button key={b.l} onClick={b.fn} style={{
             padding: '4px 12px', borderRadius: 99, fontSize: 11, fontWeight: 700, cursor: 'pointer',
             border: `1.5px solid ${P.border}`, background: P.surface, color: P.rose,
-            fontFamily: 'Tajawal,sans-serif',
+            fontFamily: 'Cairo,sans-serif',
           }}>{b.l}</button>
         ))}
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           <span style={{ fontSize: 11, color: P.muted }}>من</span>
           <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-            style={{ padding: '4px 8px', borderRadius: 8, border: `1.5px solid ${P.border}`, fontSize: 11, fontFamily: 'Tajawal,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }} />
+            style={{ padding: '4px 8px', borderRadius: 8, border: `1.5px solid ${P.border}`, fontSize: 11, fontFamily: 'Cairo,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }} />
           <span style={{ fontSize: 11, color: P.muted }}>إلى</span>
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-            style={{ padding: '4px 8px', borderRadius: 8, border: `1.5px solid ${P.border}`, fontSize: 11, fontFamily: 'Tajawal,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }} />
+            style={{ padding: '4px 8px', borderRadius: 8, border: `1.5px solid ${P.border}`, fontSize: 11, fontFamily: 'Cairo,sans-serif', background: P.bg2, color: P.ink, outline: 'none' }} />
         </div>
       </div>
 
@@ -138,7 +138,7 @@ export function DamagePanel() {
       ) : (
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
           <ResponsiveTable minWidth={500} stickyHeader>
-            <table style={{ width: '100%', minWidth: 500, borderCollapse: 'collapse', fontFamily: 'Tajawal,sans-serif' }}>
+            <table style={{ width: '100%', minWidth: 500, borderCollapse: 'collapse', fontFamily: 'Cairo,sans-serif' }}>
               <thead>
                 <tr style={{ background: P.bg2 }}>
                   {['المادة', 'النوع', 'الكمية', 'التاريخ', 'الموظف', ''].map(h =>
@@ -204,7 +204,7 @@ export function DamagePanel() {
               style={{
                 width: '100%', background: P.bg2, border: `1.5px solid ${P.border}`, borderRadius: 10,
                 padding: '9px 13px', color: P.plum, fontSize: 14, outline: 'none',
-                fontFamily: 'Tajawal, sans-serif', cursor: 'pointer'
+                fontFamily: 'Cairo, sans-serif', cursor: 'pointer'
               }}>
               <option value="">اختر مادة...</option>
               {stock.map((s: any) => (

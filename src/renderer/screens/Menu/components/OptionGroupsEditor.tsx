@@ -60,11 +60,11 @@ export const OptionGroupsEditor = forwardRef(({ initialGroups }: { initialGroups
                 <button onClick={() => delOpt(gi, oi)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}><Icon name="close" size={12} color={P.faint} /></button>
               </div>
             ))}
-            <button onClick={() => addOpt(gi)} style={{ border: `1.5px dashed ${P.borderM}`, borderRadius: 10, padding: '4px 12px', fontSize: 12, color: P.faint, cursor: 'pointer', background: 'none', fontFamily: 'Tajawal,sans-serif' }}>+ خيار</button>
+            <button onClick={() => addOpt(gi)} style={{ border: `1.5px dashed ${P.borderM}`, borderRadius: 10, padding: '4px 12px', fontSize: 12, color: P.faint, cursor: 'pointer', background: 'none', fontFamily: 'Cairo,sans-serif' }}>+ خيار</button>
           </div>
         </div>
       ))}
-      <button onClick={addGroup} style={{ width: '100%', border: `2px dashed ${P.borderM}`, borderRadius: 12, padding: '10px', fontSize: 13, color: P.muted, cursor: 'pointer', background: 'none', fontFamily: 'Tajawal,sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+      <button onClick={addGroup} style={{ width: '100%', border: `2px dashed ${P.borderM}`, borderRadius: 12, padding: '10px', fontSize: 13, color: P.muted, cursor: 'pointer', background: 'none', fontFamily: 'Cairo,sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
         <Icon name="plus" size={14} color={P.muted} />إضافة مجموعة خيارات
       </button>
     </div>

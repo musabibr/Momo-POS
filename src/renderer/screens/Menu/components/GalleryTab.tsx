@@ -120,7 +120,7 @@ export function GalleryTab({ items, onReload }: { items: any[], onReload: () => 
             <input
               value={search} onChange={e => setSearch(e.target.value)}
               placeholder="بحث…"
-              style={{ border: 'none', background: 'transparent', color: P.plum, fontSize: 13, outline: 'none', flex: 1, fontFamily: 'Tajawal,sans-serif' }}
+              style={{ border: 'none', background: 'transparent', color: P.plum, fontSize: 13, outline: 'none', flex: 1, fontFamily: 'Cairo,sans-serif' }}
             />
           </div>
         </div>
@@ -137,7 +137,7 @@ export function GalleryTab({ items, onReload }: { items: any[], onReload: () => 
                   padding: '9px 12px', borderRadius: 12, marginBottom: 3,
                   border: `1.5px solid ${isActive ? P.purple : 'transparent'}`,
                   background: isActive ? P.purpleXL : 'transparent',
-                  cursor: 'pointer', fontFamily: 'Tajawal,sans-serif',
+                  cursor: 'pointer', fontFamily: 'Cairo,sans-serif',
                   transition: 'all .12s'
                 }}
               >
@@ -293,7 +293,7 @@ export function GalleryTab({ items, onReload }: { items: any[], onReload: () => 
                                 style={{
                                   flex: 1, padding: '5px 8px', borderRadius: 8, fontSize: 11, fontWeight: 700,
                                   border: `1px solid ${P.greenL}`, background: P.greenXL, color: P.green,
-                                  cursor: 'pointer', fontFamily: 'Tajawal,sans-serif'
+                                  cursor: 'pointer', fontFamily: 'Cairo,sans-serif'
                                 }}
                               >تعيين كرئيسية</button>
                             )}
@@ -302,7 +302,7 @@ export function GalleryTab({ items, onReload }: { items: any[], onReload: () => 
                               style={{
                                 padding: '5px 8px', borderRadius: 8, fontSize: 11, fontWeight: 700,
                                 border: `1px solid ${P.roseL}`, background: P.roseXL, color: P.rose,
-                                cursor: 'pointer', fontFamily: 'Tajawal,sans-serif',
+                                cursor: 'pointer', fontFamily: 'Cairo,sans-serif',
                                 minWidth: 28
                               }}
                             >

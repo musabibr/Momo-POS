@@ -94,7 +94,7 @@ export function CustomersScreen() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: P.surface, border: `1.5px solid ${P.border}`, borderRadius: 12, padding: '8px 13px' }}>
           <Icon name="search" size={15} color={P.muted} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث بالاسم أو الهاتف…" style={{ border: 'none', background: 'transparent', color: P.plum, fontSize: 15, outline: 'none', flex: 1, fontFamily: 'Tajawal,sans-serif' }} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث بالاسم أو الهاتف…" style={{ border: 'none', background: 'transparent', color: P.plum, fontSize: 15, outline: 'none', flex: 1, fontFamily: 'Cairo,sans-serif' }} />
         </div>
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 7 }}>
           {filtered.map(c => (
@@ -142,7 +142,7 @@ export function CustomersScreen() {
       <Card style={{ padding: 14 }}>
         <div style={{ fontSize: 13, color: P.muted, marginBottom: 6, fontWeight: 700 }}>ملاحظات</div>
         <textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} placeholder="ملاحظات عن العميل…"
-          style={{ width: '100%', minHeight: 60, background: P.bg2, border: `1px solid ${P.border}`, borderRadius: 8, padding: '8px 10px', fontSize: 14, fontFamily: 'Tajawal,sans-serif', outline: 'none', resize: 'vertical', color: P.plum }} />
+          style={{ width: '100%', minHeight: 60, background: P.bg2, border: `1px solid ${P.border}`, borderRadius: 8, padding: '8px 10px', fontSize: 14, fontFamily: 'Cairo,sans-serif', outline: 'none', resize: 'vertical', color: P.plum }} />
         {editNotes !== (sel.notes || '') && (
           <Btn variant="success" size="sm" onClick={saveNotes} style={{ marginTop: 6 }} icon="save">حفظ</Btn>
         )}

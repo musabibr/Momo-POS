@@ -86,7 +86,7 @@ export function VariationModal({ item, groups, onConfirm, onClose }: VariationMo
                   style={{ padding: '7px 14px', borderRadius: 99, fontSize: 13, fontWeight: isActive ? 700 : 500, cursor: 'pointer',
                     border: `1.5px solid ${isActive ? P.purple : P.borderM}`,
                     background: isActive ? 'linear-gradient(135deg,#9333ea15,#7c3aed15)' : P.surface,
-                    color: isActive ? P.purple : P.muted, transition: 'all .15s', fontFamily: 'Tajawal, sans-serif' }}>
+                    color: isActive ? P.purple : P.muted, transition: 'all .15s', fontFamily: 'Cairo, sans-serif' }}>
                   {opt.name}{(opt.priceAdj ?? 0) > 0 && <span style={{ fontSize: 10.5, marginRight: 4, color: isActive ? P.pinkL : P.faint }}>+{opt.priceAdj}</span>}
                 </button>
               )

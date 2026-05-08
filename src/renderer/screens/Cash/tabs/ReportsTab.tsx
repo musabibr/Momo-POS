@@ -84,7 +84,7 @@ export function ReportsTab({ employees }: { employees: any[] }) {
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, border: `1px solid ${P.border}`, borderRadius: 14, background: P.surface }}>
         {rows.length === 0 && <div style={{ textAlign: 'center', padding: 50, color: P.faint }}>لا توجد ورديات في الفترة المحددة</div>}
         {rows.length > 0 && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, fontFamily: 'Tajawal,sans-serif' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, fontFamily: 'Cairo,sans-serif' }}>
             <thead>
               <tr style={{ background: P.bg2, position: 'sticky', top: 0, zIndex: 1 }}>
                 {['م', 'التاريخ', 'الموظف', 'المبيعات', 'الطلبات', 'الافتتاحي', 'الختامي', 'الحالة'].map(h => (

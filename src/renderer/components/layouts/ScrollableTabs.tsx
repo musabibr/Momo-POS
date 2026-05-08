@@ -36,7 +36,7 @@ export function ScrollableTabs({ tabs, active, onChange }: ScrollableTabsProps) 
                 fontSize: 13,
                 fontWeight: isA ? 800 : 500,
                 boxShadow: isA ? '0 1px 6px rgba(88,28,135,.10)' : 'none',
-                fontFamily: 'Tajawal, sans-serif',
+                fontFamily: 'Cairo, sans-serif',
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
               }}

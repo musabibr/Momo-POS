@@ -65,7 +65,7 @@ export function ShiftHistoryTab({ employees }: { employees: any[] }) {
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, border: `1px solid ${P.border}`, borderRadius: 14, background: P.surface }}>
         {data.rows.length === 0 && <div style={{ textAlign: 'center', padding: 50, color: P.faint }}>لا توجد ورديات</div>}
         {data.rows.length > 0 && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, fontFamily: 'Tajawal,sans-serif' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, fontFamily: 'Cairo,sans-serif' }}>
             <thead>
               <tr style={{ background: P.bg2, position: 'sticky', top: 0, zIndex: 1 }}>
                 {['م', 'التاريخ', 'الموظف', 'المبيعات', 'الطلبات', 'الافتتاحي', 'الختامي', 'الحالة'].map(h => (
@@ -103,7 +103,7 @@ export function ShiftHistoryTab({ employees }: { employees: any[] }) {
           <Btn variant="secondary" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>← السابق</Btn>
           {Array.from({ length: Math.min(data.totalPages, 7) }, (_, i) => {
             const p = i + 1
-            return <button key={p} onClick={() => setPage(p)} style={{ width: 34, height: 34, borderRadius: 8, border: `1.5px solid ${page === p ? P.purple : P.borderM}`, background: page === p ? P.purple : P.surface, color: page === p ? '#fff' : P.muted, cursor: 'pointer', fontSize: 14, fontWeight: 800, fontFamily: 'Tajawal,sans-serif' }}>{p}</button>
+            return <button key={p} onClick={() => setPage(p)} style={{ width: 34, height: 34, borderRadius: 8, border: `1.5px solid ${page === p ? P.purple : P.borderM}`, background: page === p ? P.purple : P.surface, color: page === p ? '#fff' : P.muted, cursor: 'pointer', fontSize: 14, fontWeight: 800, fontFamily: 'Cairo,sans-serif' }}>{p}</button>
           })}
           {data.totalPages > 7 && <span style={{ color: P.faint }}>…</span>}
           <Btn variant="secondary" size="sm" disabled={page === data.totalPages} onClick={() => setPage(p => p + 1)}>التالي →</Btn>

@@ -23,7 +23,7 @@ export function TabBar({ tabs, active, onChange }: TabBarProps) {
             background: active === t.id ? P.surface : 'transparent',
             color: active === t.id ? P.purple : P.muted, cursor: 'pointer', fontSize: 15, fontWeight: active === t.id ? 800 : 500,
             boxShadow: active === t.id ? '0 1px 6px rgba(88,28,135,.10)' : 'none',
-            fontFamily: 'Tajawal, sans-serif', whiteSpace: 'nowrap'
+            fontFamily: 'Cairo, sans-serif', whiteSpace: 'nowrap'
           }}>
           {t.label}
         </button>

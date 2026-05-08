@@ -17,10 +17,10 @@ function htmlShell(title: string, dateRange: string, body: string): string {
 <head>
 <meta charset="utf-8">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Tajawal', 'Segoe UI', sans-serif;
+    font-family: 'Cairo', 'Segoe UI', sans-serif;
     direction: rtl; color: #1e1b4b; background: #fff;
     font-size: 12px; line-height: 1.6; padding: 32px 36px;
   }

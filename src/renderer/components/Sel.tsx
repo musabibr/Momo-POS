@@ -15,8 +15,8 @@ export function Sel({ label, options, style, required, hint, ...rest }: SelProps
       {...rest}
       style={{
         width: '100%', background: P.bg2, border: `1.5px solid ${P.border}`, borderRadius: 10,
-        padding: '9px 13px', color: P.plum, fontSize: 15, outline: 'none',
-        fontFamily: 'Tajawal, sans-serif', cursor: 'pointer', ...style
+        padding: '9px 13px', color: P.plum, fontSize: 16, outline: 'none',
+        fontFamily: 'Cairo, sans-serif', cursor: 'pointer', ...style
       }}
     >
       {options.map((o: any) =>

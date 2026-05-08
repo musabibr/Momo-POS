@@ -72,7 +72,7 @@ function AppInner() {
   if (firstRun === null || loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: P.bg }}>
-        <div style={{ fontSize: 24, color: P.purple, fontWeight: 900, fontFamily: 'Tajawal,sans-serif' }}>موموـ POS</div>
+        <div style={{ fontSize: 24, color: P.purple, fontWeight: 900, fontFamily: 'Cairo,sans-serif' }}>موموـ POS</div>
       </div>
     )
   }
@@ -86,7 +86,7 @@ function AppInner() {
   // Kitchen role — fullscreen, no sidebar
   if (session.role === 'kitchen') {
     return (
-      <div style={{ height: '100vh', direction: 'rtl', fontFamily: 'Tajawal, sans-serif', background: P.bg }}>
+      <div style={{ height: '100vh', direction: 'rtl', fontFamily: 'Cairo, sans-serif', background: P.bg }}>
         <KitchenConsole />
         <ToastHost />
       </div>
@@ -94,7 +94,7 @@ function AppInner() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', direction: 'rtl', fontFamily: 'Tajawal, sans-serif', background: P.bg }}>
+    <div style={{ display: 'flex', height: '100vh', direction: 'rtl', fontFamily: 'Cairo, sans-serif', background: P.bg }}>
       <Sidebar active={active} onChange={setActive} collapsed={collapsed} role={session.role} permissions={session.permissions} employee={session.employee} onLogout={logout} />
       <main
         style={{

@@ -36,7 +36,7 @@ export function ImagePicker({ value, onChange }: ImagePickerProps) {
       )}
       <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
         {(['url', 'upload'] as const).map(m => (
-          <button key={m} onClick={() => setMode(m)} style={{ flex: 1, padding: '7px', borderRadius: 8, border: `1.5px solid ${mode === m ? P.purple : P.borderM}`, background: mode === m ? P.ghost : 'transparent', color: mode === m ? P.purple : P.muted, cursor: 'pointer', fontSize: 12.5, fontWeight: mode === m ? 700 : 400, fontFamily: 'Tajawal, sans-serif' }}>
+          <button key={m} onClick={() => setMode(m)} style={{ flex: 1, padding: '7px', borderRadius: 8, border: `1.5px solid ${mode === m ? P.purple : P.borderM}`, background: mode === m ? P.ghost : 'transparent', color: mode === m ? P.purple : P.muted, cursor: 'pointer', fontSize: 12.5, fontWeight: mode === m ? 700 : 400, fontFamily: 'Cairo, sans-serif' }}>
             {m === 'url' ? 'رابط URL' : 'رفع صورة'}
           </button>
         ))}

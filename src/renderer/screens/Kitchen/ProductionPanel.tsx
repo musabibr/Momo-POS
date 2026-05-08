@@ -164,7 +164,7 @@ export function ProductionPanel() {
               style={{
                 width: '100%', background: P.bg2, border: `1.5px solid ${P.border}`, borderRadius: 10,
                 padding: '9px 13px', color: P.plum, fontSize: 14, outline: 'none',
-                fontFamily: 'Tajawal, sans-serif', cursor: 'pointer'
+                fontFamily: 'Cairo, sans-serif', cursor: 'pointer'
               }}>
               <option value="">اختر صنف...</option>
               {menuItems.map((item: any) => (
@@ -212,7 +212,7 @@ export function ProductionPanel() {
                     style={{
                       width: 70, padding: '5px 8px', borderRadius: 8, fontSize: 13, fontWeight: 700,
                       border: `1.5px solid ${P.border}`, background: P.surface, outline: 'none',
-                      textAlign: 'center', fontFamily: 'Tajawal,sans-serif', color: P.plum,
+                      textAlign: 'center', fontFamily: 'Cairo,sans-serif', color: P.plum,
                     }}
                     onFocus={e => e.currentTarget.style.borderColor = P.purple}
                     onBlur={e => e.currentTarget.style.borderColor = P.border}
@@ -222,7 +222,7 @@ export function ProductionPanel() {
                 <button onClick={() => removeMaterial(idx)} style={{
                   padding: '4px 7px', background: P.roseXL, border: `1px solid ${P.roseL}`,
                   borderRadius: 7, color: P.rose, cursor: 'pointer', fontSize: 11,
-                  fontFamily: 'Tajawal,sans-serif', fontWeight: 800,
+                  fontFamily: 'Cairo,sans-serif', fontWeight: 800,
                 }}>✕</button>
               </div>
             ))}
@@ -241,7 +241,7 @@ export function ProductionPanel() {
                     cursor: 'pointer', border: `1px solid ${matFilter === f.id ? P.purple : P.border}`,
                     background: matFilter === f.id ? P.purpleXL : 'transparent',
                     color: matFilter === f.id ? P.purple : P.muted,
-                    fontFamily: 'Tajawal,sans-serif',
+                    fontFamily: 'Cairo,sans-serif',
                   }}>{f.label}</button>
                 ))}
               </div>
@@ -250,7 +250,7 @@ export function ProductionPanel() {
                   style={{
                     width: '100%', background: P.bg2, border: `1.5px solid ${P.border}`, borderRadius: 10,
                     padding: '6px 10px', color: P.plum, fontSize: 12, outline: 'none',
-                    fontFamily: 'Tajawal, sans-serif', cursor: 'pointer'
+                    fontFamily: 'Cairo, sans-serif', cursor: 'pointer'
                   }}>
                   <option value="">+ إضافة مادة...</option>
                   {availableMaterials.map((s: any) => {

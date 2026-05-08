@@ -88,7 +88,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       height: '100vh', width: '100vw',
       background: `linear-gradient(135deg, #1a0a2e 0%, #2d1657 40%, #1a0a2e 100%)`,
-      fontFamily: 'Tajawal, sans-serif', direction: 'rtl', overflow: 'hidden'
+      fontFamily: 'Cairo, sans-serif', direction: 'rtl', overflow: 'hidden'
     }}>
       {/* Decorative bg circles */}
       <div style={{ position: 'absolute', top: -100, left: -80, width: 350, height: 350, borderRadius: '50%', background: 'radial-gradient(circle, rgba(147,51,234,0.15) 0%, transparent 70%)' }} />
@@ -133,7 +133,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
               style={{
                 width: '100%', height: 44, padding: '0 14px', borderRadius: 10,
                 background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-                color: '#fff', fontSize: 15, outline: 'none', fontFamily: 'Tajawal, sans-serif'
+                color: '#fff', fontSize: 15, outline: 'none', fontFamily: 'Cairo, sans-serif'
               }}
             />
           </div>
@@ -148,13 +148,13 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
               style={{
                 width: '100%', height: 44, padding: '0 14px', borderRadius: 10,
                 background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-                color: '#fff', fontSize: 15, outline: 'none', fontFamily: 'Tajawal, sans-serif', letterSpacing: 3
+                color: '#fff', fontSize: 15, outline: 'none', fontFamily: 'Cairo, sans-serif', letterSpacing: 3
               }}
             />
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 16 }}>
-            <button type="button" onClick={() => setShowForgot(true)} style={{ background: 'none', border: 'none', color: '#db2777', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Tajawal, sans-serif' }}>
+            <button type="button" onClick={() => setShowForgot(true)} style={{ background: 'none', border: 'none', color: '#db2777', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Cairo, sans-serif' }}>
               نسيت كلمة المرور؟
             </button>
           </div>
@@ -169,7 +169,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
               background: username && password ? 'linear-gradient(135deg,#9333ea,#db2777)' : 'rgba(255,255,255,0.06)',
               color: username && password ? '#fff' : 'rgba(255,255,255,0.3)',
               fontSize: 16, fontWeight: 800, cursor: username && password ? 'pointer' : 'default',
-              fontFamily: 'Tajawal, sans-serif',
+              fontFamily: 'Cairo, sans-serif',
               boxShadow: username && password ? '0 8px 24px rgba(147,51,234,.35)' : 'none',
               transition: 'all .2s'
             }}>

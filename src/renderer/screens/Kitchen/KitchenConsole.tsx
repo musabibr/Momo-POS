@@ -122,7 +122,7 @@ export function KitchenConsole() {
               flex: 1, padding: '9px 6px', borderRadius: 11, border: 'none',
               background: active ? P.surface : 'transparent',
               color: active ? accent : P.muted, cursor: 'pointer',
-              fontWeight: active ? 800 : 500, fontSize: 13, fontFamily: 'Tajawal,sans-serif',
+              fontWeight: active ? 800 : 500, fontSize: 13, fontFamily: 'Cairo,sans-serif',
               boxShadow: active ? `0 1px 6px ${accent}15` : 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
               transition: 'all .15s ease',

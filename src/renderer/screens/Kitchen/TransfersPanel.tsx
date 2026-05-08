@@ -38,7 +38,7 @@ export function TransfersPanel() {
             style={{
               width: '100%', padding: '7px 12px', borderRadius: 10,
               border: `1.5px solid ${P.border}`, background: P.surface,
-              fontSize: 12, fontFamily: 'Tajawal,sans-serif', color: P.ink,
+              fontSize: 12, fontFamily: 'Cairo,sans-serif', color: P.ink,
               outline: 'none', direction: 'rtl', paddingRight: 32
             }}
             onFocus={e => e.currentTarget.style.borderColor = P.purple}
@@ -55,7 +55,7 @@ export function TransfersPanel() {
               cursor: 'pointer', border: `1.5px solid ${direction === f.id ? P.purple : P.border}`,
               background: direction === f.id ? P.purpleXL : P.surface,
               color: direction === f.id ? P.purple : P.muted,
-              fontFamily: 'Tajawal,sans-serif', display: 'flex', gap: 3, alignItems: 'center',
+              fontFamily: 'Cairo,sans-serif', display: 'flex', gap: 3, alignItems: 'center',
               transition: 'all .12s',
             }}>
               {f.label}

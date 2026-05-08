@@ -41,7 +41,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
         style={{
           display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px',
           borderRadius: 12, border: `1.5px solid ${P.borderM}`, background: P.surface,
-          cursor: 'pointer', fontFamily: 'Tajawal,sans-serif', fontSize: 14, color: P.plum,
+          cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontSize: 14, color: P.plum,
           width: '100%', justifyContent: 'center',
         }}
       >
@@ -72,7 +72,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
                   border: `1.5px solid ${cat === c.id && !search ? P.purple : P.borderM}`,
                   background: cat === c.id && !search ? P.purple : P.surface,
                   color: cat === c.id && !search ? '#fff' : P.muted,
-                  cursor: 'pointer', fontFamily: 'Tajawal,sans-serif',
+                  cursor: 'pointer', fontFamily: 'Cairo,sans-serif',
                 }}
               >
                 {c.label}
@@ -104,7 +104,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
                   <MenuIcon id={icon.id} size={32} />
                   <span style={{
                     fontSize: 10, fontWeight: 700, color: isSelected ? P.purple : P.muted,
-                    fontFamily: 'Tajawal,sans-serif', textAlign: 'center',
+                    fontFamily: 'Cairo,sans-serif', textAlign: 'center',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     maxWidth: '100%',
                   }}>

@@ -166,8 +166,8 @@ function ReceiptTab() {
   return (
     <div style={{ display: 'flex', gap: 20 }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 500 }}>
-        <Field label="نص رأس الإيصال"><textarea value={sett.header} onChange={(e: any) => upd('header', e.target.value)} rows={3} style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${P.border}`, background: P.bg, fontSize: 14, resize: 'vertical', fontFamily: 'Tajawal,sans-serif', outline: 'none' }} /></Field>
-        <Field label="نص ذيل الإيصال"><textarea value={sett.footer} onChange={(e: any) => upd('footer', e.target.value)} rows={2} style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${P.border}`, background: P.bg, fontSize: 14, resize: 'vertical', fontFamily: 'Tajawal,sans-serif', outline: 'none' }} /></Field>
+        <Field label="نص رأس الإيصال"><textarea value={sett.header} onChange={(e: any) => upd('header', e.target.value)} rows={3} style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${P.border}`, background: P.bg, fontSize: 14, resize: 'vertical', fontFamily: 'Cairo,sans-serif', outline: 'none' }} /></Field>
+        <Field label="نص ذيل الإيصال"><textarea value={sett.footer} onChange={(e: any) => upd('footer', e.target.value)} rows={2} style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${P.border}`, background: P.bg, fontSize: 14, resize: 'vertical', fontFamily: 'Cairo,sans-serif', outline: 'none' }} /></Field>
         <Field label="الشعار"><div style={{ display: 'flex', gap: 8 }}><Inp value={sett.logo} onChange={(e: any) => upd('logo', e.target.value)} placeholder="مسار الشعار" /><Btn variant="secondary" size="sm" onClick={() => api?.settings?.pickLogo?.().then((p: string) => p && upd('logo', p))}>رفع</Btn></div></Field>
         <Btn variant={saved ? 'success' : 'primary'} icon={saved ? 'check' : 'save'} onClick={save} style={{ alignSelf: 'flex-start' }}>{saved ? 'تم الحفظ!' : 'حفظ إعدادات الإيصال'}</Btn>
       </div>
@@ -221,7 +221,7 @@ function BanksTab() {
         {banks.length === 0 && <div style={{ textAlign: 'center', color: P.faint, padding: 20 }}>لا توجد بنوك معتمدة</div>}
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <input value={newBank} onChange={e => setNewBank(e.target.value)} placeholder="اسم البنك الجديد…" style={{ flex: 1, padding: '8px 14px', borderRadius: 8, border: `1.5px solid ${P.border}`, fontSize: 15, outline: 'none', fontFamily: 'Tajawal,sans-serif' }} onKeyDown={e => e.key === 'Enter' && add()} />
+        <input value={newBank} onChange={e => setNewBank(e.target.value)} placeholder="اسم البنك الجديد…" style={{ flex: 1, padding: '8px 14px', borderRadius: 8, border: `1.5px solid ${P.border}`, fontSize: 15, outline: 'none', fontFamily: 'Cairo,sans-serif' }} onKeyDown={e => e.key === 'Enter' && add()} />
         <Btn variant="primary" onClick={add}>إضافة</Btn>
       </div>
     </div>

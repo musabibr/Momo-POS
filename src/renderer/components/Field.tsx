@@ -12,7 +12,7 @@ interface FieldProps {
 export function Field({ label, children, required, hint, style }: FieldProps) {
   return (
     <div style={{ marginBottom: 14, ...style }}>
-      <div style={{ fontSize: 13, color: P.muted, marginBottom: 6, fontWeight: 700, display: 'flex', gap: 4, alignItems: 'center' }}>
+      <div style={{ fontSize: 14, color: P.muted, marginBottom: 6, fontWeight: 800, display: 'flex', gap: 4, alignItems: 'center' }}>
         {label}{required && <span style={{ color: P.pink }}> *</span>}
         {hint && <span style={{ color: P.faint, fontWeight: 400, fontSize: 12 }}>({hint})</span>}
       </div>

@@ -95,7 +95,7 @@ export function StockTab() {
         <Inp value={search} onChange={(e:any)=>setSearch(e.target.value)} placeholder="🔍 ابحث…" style={{flex:'1 1 200px',minWidth:150}}/>
         <div style={{display:'flex',gap:4}}>
           {([['all','الكل'],['low','⚠ منخفض'],['good','✓ جيد']] as const).map(([k,l])=>(
-            <button key={k} onClick={()=>setFilter(k)} className="momo-pill" style={{padding:'6px 14px',borderRadius:99,fontSize:13,fontWeight:filter===k?800:500,border:`1.5px solid ${filter===k?P.purple:P.borderM}`,background:filter===k?P.purple:P.surface,color:filter===k?'#fff':P.muted,cursor:'pointer',fontFamily:'Tajawal,sans-serif'}}>{l}</button>
+            <button key={k} onClick={()=>setFilter(k)} className="momo-pill" style={{padding:'6px 14px',borderRadius:99,fontSize:13,fontWeight:filter===k?800:500,border:`1.5px solid ${filter===k?P.purple:P.borderM}`,background:filter===k?P.purple:P.surface,color:filter===k?'#fff':P.muted,cursor:'pointer',fontFamily:'Cairo,sans-serif'}}>{l}</button>
           ))}
         </div>
         <Btn variant="secondary" icon="search" onClick={()=>barcodeRef.current?.focus()}>باركود</Btn>
@@ -125,9 +125,9 @@ export function StockTab() {
               <td style={{padding:'11px 12px'}}><div style={{display:'flex',gap:4}}>
                 <button title="تعديل" onClick={()=>setShowEdit({...ing})} style={{padding:'4px 8px',background:P.ghost,border:`1px solid ${P.borderM}`,borderRadius:7,color:P.purple,cursor:'pointer',display:'flex',alignItems:'center'}}><Icon name="edit" size={13} color={P.purple}/></button>
                 {ing.type!=='premade'&&<>
-                  <button title="تحويل" onClick={()=>{setShowTransfer(ing);setTransferDir('toKitchen')}} style={{padding:'4px 8px',background:P.goldXL,border:`1px solid ${P.goldL}`,borderRadius:7,color:P.gold,cursor:'pointer',fontSize:12,fontFamily:'Tajawal,sans-serif',fontWeight:800}}>⇄ تحويل</button>
-                  <button onClick={()=>{setShowAdj(ing);setAdjType('add')}} style={{padding:'4px 8px',background:P.greenXL,border:`1px solid ${P.greenL}`,borderRadius:7,color:P.green,cursor:'pointer',fontSize:13,fontFamily:'Tajawal,sans-serif',fontWeight:800}}>+</button>
-                  <button onClick={()=>{setShowAdj(ing);setAdjType('remove')}} style={{padding:'4px 8px',background:P.roseXL,border:`1px solid ${P.roseL}`,borderRadius:7,color:P.rose,cursor:'pointer',fontSize:13,fontFamily:'Tajawal,sans-serif',fontWeight:800}}>−</button>
+                  <button title="تحويل" onClick={()=>{setShowTransfer(ing);setTransferDir('toKitchen')}} style={{padding:'4px 8px',background:P.goldXL,border:`1px solid ${P.goldL}`,borderRadius:7,color:P.gold,cursor:'pointer',fontSize:12,fontFamily:'Cairo,sans-serif',fontWeight:800}}>⇄ تحويل</button>
+                  <button onClick={()=>{setShowAdj(ing);setAdjType('add')}} style={{padding:'4px 8px',background:P.greenXL,border:`1px solid ${P.greenL}`,borderRadius:7,color:P.green,cursor:'pointer',fontSize:13,fontFamily:'Cairo,sans-serif',fontWeight:800}}>+</button>
+                  <button onClick={()=>{setShowAdj(ing);setAdjType('remove')}} style={{padding:'4px 8px',background:P.roseXL,border:`1px solid ${P.roseL}`,borderRadius:7,color:P.rose,cursor:'pointer',fontSize:13,fontFamily:'Cairo,sans-serif',fontWeight:800}}>−</button>
                 </>}
                 <button onClick={()=>setConfirmDel({id:ing.id,name:ing.name})} style={{padding:'4px 8px',background:P.ghost,border:`1px solid ${P.borderM}`,borderRadius:7,color:P.rose,cursor:'pointer',display:'flex',alignItems:'center'}}><Icon name="del" size={13} color={P.rose}/></button>
               </div></td>
@@ -156,7 +156,7 @@ export function StockTab() {
       </Modal>}
 
       {showAdj&&<Modal title={`تعديل مخزون · ${showAdj.name}`} onClose={()=>setShowAdj(null)} width={380} icon="layers">
-        <div style={{display:'flex',gap:7,marginBottom:14,flexWrap:'wrap'}}>{[{k:'add',l:'إضافة'},{k:'remove',l:'سحب'},{k:'waste',l:'هدر'},{k:'damage',l:'تالف'},{k:'correction',l:'تصحيح'}].map(t=><button key={t.k} onClick={()=>setAdjType(t.k)} style={{flex:1,minWidth:60,padding:'8px',borderRadius:9,border:`1.5px solid ${adjType===t.k?P.purple:P.borderM}`,background:adjType===t.k?P.ghost:'transparent',color:adjType===t.k?P.purple:P.muted,cursor:'pointer',fontSize:12,fontWeight:adjType===t.k?800:400,fontFamily:'Tajawal,sans-serif'}}>{t.l}</button>)}</div>
+        <div style={{display:'flex',gap:7,marginBottom:14,flexWrap:'wrap'}}>{[{k:'add',l:'إضافة'},{k:'remove',l:'سحب'},{k:'waste',l:'هدر'},{k:'damage',l:'تالف'},{k:'correction',l:'تصحيح'}].map(t=><button key={t.k} onClick={()=>setAdjType(t.k)} style={{flex:1,minWidth:60,padding:'8px',borderRadius:9,border:`1.5px solid ${adjType===t.k?P.purple:P.borderM}`,background:adjType===t.k?P.ghost:'transparent',color:adjType===t.k?P.purple:P.muted,cursor:'pointer',fontSize:12,fontWeight:adjType===t.k?800:400,fontFamily:'Cairo,sans-serif'}}>{t.l}</button>)}</div>
         <Field label="الموقع"><Sel value={adjLocation} onChange={(e:any)=>setAdjLocation(e.target.value)} options={[{value:'main',label:'المستودع'},{value:'kitchen',label:'المطبخ'}]}/></Field>
         <Field label={adjType==='correction'?'الكمية الجديدة':'الكمية'} required><Inp value={adjQty} onChange={(e:any)=>setAdjQty(e.target.value)} type="number"/></Field>
         <Field label="السبب" required><Inp value={adjReason} onChange={(e:any)=>setAdjReason(e.target.value)} placeholder="سبب التعديل"/></Field>
@@ -166,7 +166,7 @@ export function StockTab() {
       {showTransfer&&<Modal title={`تحويل · ${showTransfer.name}`} onClose={()=>setShowTransfer(null)} width={400} icon="layers">
         <div style={{display:'flex',gap:6,marginBottom:14}}>
           {([['toKitchen','مستودع → مطبخ'],['toMain','مطبخ → مستودع']] as const).map(([k,l])=>(
-            <button key={k} onClick={()=>setTransferDir(k)} style={{flex:1,padding:'8px',borderRadius:9,border:`1.5px solid ${transferDir===k?P.purple:P.borderM}`,background:transferDir===k?P.ghost:'transparent',color:transferDir===k?P.purple:P.muted,cursor:'pointer',fontSize:13,fontWeight:transferDir===k?800:400,fontFamily:'Tajawal,sans-serif'}}>{l}</button>
+            <button key={k} onClick={()=>setTransferDir(k)} style={{flex:1,padding:'8px',borderRadius:9,border:`1.5px solid ${transferDir===k?P.purple:P.borderM}`,background:transferDir===k?P.ghost:'transparent',color:transferDir===k?P.purple:P.muted,cursor:'pointer',fontSize:13,fontWeight:transferDir===k?800:400,fontFamily:'Cairo,sans-serif'}}>{l}</button>
           ))}
         </div>
         <div style={{background:transferDir==='toKitchen'?P.goldXL:P.purpleXL,border:`1px solid ${transferDir==='toKitchen'?P.goldL:P.purpleL}`,borderRadius:10,padding:'10px 14px',marginBottom:14,fontSize:13,color:transferDir==='toKitchen'?P.gold:P.purple,fontWeight:700}}>
