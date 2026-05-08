@@ -8,6 +8,7 @@ import { Card } from '../../components/Card'
 import { Icon } from '../../components/Icon'
 import { toast } from '../../components/Toast'
 import { ScrollableTabs, ResponsiveTable, Pagination, usePaginated, KpiGrid } from '../../components/layouts'
+import { LoadingPlaceholder } from '../../components/LoadingPlaceholder'
 
 const api = (window as any).api
 
@@ -29,7 +30,12 @@ export function ReportsScreen() {
     }
   }, [range])
 
-  const filters = { startDate: startDate || undefined, endDate: endDate || undefined }
+  const filters = (() => {
+    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+      return { startDate: endDate || undefined, endDate: startDate || undefined }
+    }
+    return { startDate: startDate || undefined, endDate: endDate || undefined }
+  })()
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 14px', gap: 14 }}>
@@ -90,13 +96,18 @@ function SalesReport({ filters }: any) {
   const [summary, setSummary] = useState<any>(null)
   const [orders, setOrders] = useState<any[]>([])
   const [chartData, setChartData] = useState<{labels: string[], values: number[], title: string}>({ labels: [], values: [], title: 'خريطة المبيعات' })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const ordersPaged = usePaginated(orders, 50)
 
   useEffect(() => {
-    api?.orders?.salesSummary?.(filters).then((d: any) => d && setSummary(d))
-    api?.orders?.list?.({ ...filters, status: 'confirmed' }).then((d: any) => {
-      const data = d || []
-      setOrders(data)
+    setLoading(true)
+    setError(null)
+    Promise.all([
+      api?.orders?.salesSummary?.(filters).then((d: any) => d && setSummary(d)),
+      api?.orders?.list?.({ ...filters, status: 'confirmed' }).then((d: any) => {
+        const data = d || []
+        setOrders(data)
       
       // Determine date span using the provided filters or fallback to today
       const minDate = filters.startDate ? new Date(filters.startDate) : new Date(new Date().setHours(0,0,0,0))
@@ -161,8 +172,11 @@ function SalesReport({ filters }: any) {
         setChartData({ labels, values, title: 'المبيعات الشهرية' })
       }
     })
+    ]).catch((err: any) => setError(err?.message || 'خطأ في تحميل البيانات')).finally(() => setLoading(false))
   }, [filters.startDate, filters.endDate])
 
+  if (loading) return <LoadingPlaceholder lines={5} />
+  if (error) return <Card style={{ padding: 32, textAlign: 'center' }}><div style={{ fontSize: 18, color: P.rose, fontWeight: 800, marginBottom: 8 }}>⚠ خطأ في التحميل</div><div style={{ fontSize: 14, color: P.muted }}>{error}</div></Card>
   const maxH = Math.max(...chartData.values, 1)
 
   return (
@@ -323,10 +337,14 @@ function SalesReport({ filters }: any) {
 
 function ItemsReport({ filters }: any) {
   const [ranked, setRanked] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api?.orders?.profitByItem?.(filters).then((d: any) => d && setRanked(d))
+    setLoading(true)
+    api?.orders?.profitByItem?.(filters).then((d: any) => d && setRanked(d)).finally(() => setLoading(false))
   }, [filters.startDate, filters.endDate])
+
+  if (loading) return <LoadingPlaceholder lines={4} />
 
   const maxRevenue = ranked.length > 0 ? ranked[0].revenue : 1
   const top = ranked.slice(0, 10)
@@ -409,14 +427,18 @@ function PnLReport({ filters }: any) {
   const [sales, setSales] = useState<any>(null)
   const [expenses, setExpenses] = useState<any>(null)
   const [invStats, setInvStats] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api?.orders?.salesSummary?.(filters).then((d: any) => d && setSales(d))
-    api?.cash?.expensesSummary?.(filters).then((d: any) => d && setExpenses(d))
-    api?.reports?.inventoryStats?.(filters).then((d: any) => d && setInvStats(d))
+    setLoading(true)
+    Promise.all([
+      api?.orders?.salesSummary?.(filters).then((d: any) => d && setSales(d)),
+      api?.cash?.expensesSummary?.(filters).then((d: any) => d && setExpenses(d)),
+      api?.reports?.inventoryStats?.(filters).then((d: any) => d && setInvStats(d)),
+    ]).finally(() => setLoading(false))
   }, [filters.startDate, filters.endDate])
 
-  if (!sales || !expenses || !invStats) return <div style={{ padding: 40, textAlign: 'center', color: P.faint }}>جاري التحميل…</div>
+  if (loading || !sales || !expenses || !invStats) return <LoadingPlaceholder lines={5} />
 
   const revenue = sales.totalRevenue || 0
   const cogs = sales.totalCost || 0
@@ -506,12 +528,14 @@ function PnLReport({ filters }: any) {
 
 function PaymentsReport({ filters }: any) {
   const [summary, setSummary] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api?.orders?.salesSummary?.(filters).then((d: any) => d && setSummary(d))
+    setLoading(true)
+    api?.orders?.salesSummary?.(filters).then((d: any) => d && setSummary(d)).finally(() => setLoading(false))
   }, [filters.startDate, filters.endDate])
 
-  if (!summary) return <div style={{ padding: 40, textAlign: 'center', color: P.faint, fontSize: 15 }}>جاري التحميل…</div>
+  if (loading || !summary) return <LoadingPlaceholder lines={3} />
 
   const total = summary.totalRevenue || 1
   const methods = [
@@ -585,9 +609,11 @@ function PaymentsReport({ filters }: any) {
 function AuditLog({ filters }: any) {
   const [logs, setLogs] = useState<any[]>([])
   const [filterType, setFilterType] = useState('')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api?.actionLog?.list?.({ action: filterType || undefined, ...filters }).then((d: any) => d && setLogs(d))
+    setLoading(true)
+    api?.actionLog?.list?.({ action: filterType || undefined, ...filters }).then((d: any) => d && setLogs(d)).finally(() => setLoading(false))
   }, [filterType, filters.startDate, filters.endDate])
 
   const actionLabels: Record<string, string> = {
@@ -643,11 +669,13 @@ function AuditLog({ filters }: any) {
 
 function InventoryReport({ filters }: any) {
   const [stats, setStats] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   useEffect(() => {
-    api?.reports?.inventoryStats?.(filters).then((d: any) => d && setStats(d))
+    setLoading(true)
+    api?.reports?.inventoryStats?.(filters).then((d: any) => d && setStats(d)).finally(() => setLoading(false))
   }, [filters.startDate, filters.endDate])
 
-  if (!stats) return <div style={{ padding: 40, textAlign: 'center', color: P.faint }}>جاري التحميل…</div>
+  if (loading || !stats) return <LoadingPlaceholder lines={3} />
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -684,11 +712,13 @@ function InventoryReport({ filters }: any) {
 
 function EmployeeReport({ filters }: any) {
   const [stats, setStats] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   useEffect(() => {
-    api?.reports?.employeeStats?.(filters).then((d: any) => d && setStats(d))
+    setLoading(true)
+    api?.reports?.employeeStats?.(filters).then((d: any) => d && setStats(d)).finally(() => setLoading(false))
   }, [filters.startDate, filters.endDate])
 
-  if (stats.length === 0) return <div style={{ padding: 40, textAlign: 'center', color: P.faint }}>جاري التحميل أو لا توجد بيانات...</div>
+  if (loading) return <LoadingPlaceholder lines={4} />
 
   const maxSales = Math.max(...stats.map(s => s.total_sales || 0), 1)
 
@@ -726,11 +756,13 @@ function EmployeeReport({ filters }: any) {
 
 function CustomerReport({ filters }: any) {
   const [stats, setStats] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   useEffect(() => {
-    api?.reports?.customerStats?.(filters).then((d: any) => d && setStats(d))
+    setLoading(true)
+    api?.reports?.customerStats?.(filters).then((d: any) => d && setStats(d)).finally(() => setLoading(false))
   }, [filters.startDate, filters.endDate])
 
-  if (!stats) return <div style={{ padding: 40, textAlign: 'center', color: P.faint }}>جاري التحميل…</div>
+  if (loading || !stats) return <LoadingPlaceholder lines={3} />
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>

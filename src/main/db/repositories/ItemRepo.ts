@@ -2,6 +2,7 @@ import { getDb } from '../connection'
 import { getImagesPath } from '../connection'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import { ActionLogRepo } from './ActionLogRepo'
 
 export class ItemRepo {
   /**
@@ -135,6 +136,8 @@ export class ItemRepo {
         }
       }
 
+      ActionLogRepo.write('item_updated', JSON.stringify({ id, changedKeys: Object.keys(data) }))
+
       return ItemRepo.getById(id)
     })()
   }
@@ -162,12 +165,16 @@ export class ItemRepo {
 
   static delete(id: number) {
     const db = getDb()
-    const hasOrders = db.prepare(`SELECT COUNT(*) as cnt FROM order_items WHERE item_id = ?`).get(id) as any
-    if (hasOrders && hasOrders.cnt > 0) {
-      db.prepare(`UPDATE items SET available = 0 WHERE id = ?`).run(id)
-    } else {
-      db.prepare(`DELETE FROM items WHERE id = ?`).run(id)
-    }
+    db.transaction(() => {
+      const hasOrders = db.prepare(`SELECT COUNT(*) as cnt FROM order_items WHERE item_id = ?`).get(id) as any
+      if (hasOrders && hasOrders.cnt > 0) {
+        db.prepare(`UPDATE items SET available = 0 WHERE id = ?`).run(id)
+        ActionLogRepo.write('item_deactivated', JSON.stringify({ id }))
+      } else {
+        db.prepare(`DELETE FROM items WHERE id = ?`).run(id)
+        ActionLogRepo.write('item_deleted', JSON.stringify({ id }))
+      }
+    })()
   }
 
   static setAvailable(id: number, available: boolean) {

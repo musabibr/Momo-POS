@@ -292,12 +292,13 @@ export class OrderRepo {
             if (diff < 0) {
               // Quantity increased → need to deduct MORE stock from kitchen
               const deductQty = Math.abs(restoreQty)
-              const currentRow = db.prepare(`SELECT quantity FROM inventory_stock WHERE item_id = ? AND location_id = 'kitchen'`)
-                .get(recipe.ingredient_id) as any
-              const currentQty = currentRow?.quantity || 0
-              if (currentQty < deductQty) {
+              const result = db.prepare(`
+                UPDATE inventory_stock SET quantity = quantity - ?
+                WHERE item_id = ? AND location_id = 'kitchen' AND quantity >= ?
+              `).run(deductQty, recipe.ingredient_id, deductQty)
+              if (result.changes === 0) {
                 const itemName = (db.prepare(`SELECT name FROM inventory_items WHERE id = ?`).get(recipe.ingredient_id) as any)?.name || recipe.ingredient_id
-                throw new Error(`مخزون المطبخ غير كافي لـ "${itemName}" (متوفر: ${currentQty}, مطلوب: ${deductQty})`)
+                throw new Error(`مخزون المطبخ غير كافي: ${itemName}`)
               }
             }
 

@@ -2,7 +2,9 @@ import { ipcMain, app, dialog, BrowserWindow } from 'electron'
 import { getDb, getDbPath, getImagesPath } from '../db/connection'
 import { join, resolve, sep } from 'path'
 import { existsSync, mkdirSync, copyFileSync, readdirSync, statSync, readFileSync, writeFileSync, unlinkSync, rmSync } from 'fs'
+import { promises as fsp } from 'fs'
 import { createHash } from 'crypto'
+import { createReadStream } from 'fs'
 import { execSync } from 'child_process'
 import { getSession } from '../session'
 import { EmployeeRepo } from '../db/repositories/EmployeeRepo'
@@ -16,9 +18,14 @@ function getRecoveryDir(): string {
   return dir
 }
 
-function computeSha256(filePath: string): string {
-  const buf = readFileSync(filePath)
-  return createHash('sha256').update(buf).digest('hex')
+function computeSha256(filePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const hash = createHash('sha256')
+    const stream = createReadStream(filePath)
+    stream.on('data', chunk => hash.update(chunk))
+    stream.on('end', () => resolve(hash.digest('hex')))
+    stream.on('error', reject)
+  })
 }
 
 /** Pre-flight DB snapshot before destructive ops */
@@ -80,14 +87,14 @@ async function runBackup(targetPath: string): Promise<{ path: string; timestamp:
       const srcFile = join(imagesDir, file)
       const stat = statSync(srcFile)
       if (stat.isFile()) {
-        copyFileSync(srcFile, join(imagesBackupDir, file))
+        await fsp.copyFile(srcFile, join(imagesBackupDir, file))
         imageCount++
       }
     }
   }
 
   // 3. Write manifest.json
-  const dbSha256 = computeSha256(dbBackupPath)
+  const dbSha256 = await computeSha256(dbBackupPath)
   const schemaVersion = (db.prepare(`SELECT value FROM settings WHERE key='schema_version'`).get() as any)?.value || '001'
   const manifest = {
     db_sha256: dbSha256,
@@ -169,9 +176,16 @@ export function registerBackupIpc(): void {
       const manifestPath = join(backupPath, 'manifest.json')
       if (existsSync(manifestPath)) {
         const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
-        const actualSha = computeSha256(dbFile)
+        const actualSha = await computeSha256(dbFile)
         if (manifest.db_sha256 && manifest.db_sha256 !== actualSha) {
           throw new Error('فشل التحقق من سلامة قاعدة البيانات — SHA256 غير متطابق')
+        }
+        if (manifest.schema_version) {
+          const db = getDb()
+          const currentVer = (db.prepare(`SELECT value FROM settings WHERE key='schema_version'`).get() as any)?.value
+          if (manifest.schema_version !== currentVer) {
+            throw new Error(`إصدار قاعدة البيانات في النسخة (${manifest.schema_version}) لا يطابق النسخة الحالية (${currentVer})`)
+          }
         }
       }
 

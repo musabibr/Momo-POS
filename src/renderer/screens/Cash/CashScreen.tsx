@@ -15,6 +15,8 @@ import { ReconcileTab } from './tabs/ReconcileTab'
 import { ShiftHistoryTab } from './tabs/ShiftHistoryTab'
 import { ReportsTab } from './tabs/ReportsTab'
 
+import { LoadingPlaceholder } from '../../components/LoadingPlaceholder'
+
 const api = (window as any).api
 
 export function CashScreen() {
@@ -23,6 +25,7 @@ export function CashScreen() {
   const [showOpen, setShowOpen] = useState(false)
   const [openFloat, setOpenFloat] = useState('')
   const [employees, setEmployees] = useState<any[]>([])
+  const [gateLoaded, setGateLoaded] = useState(false)
 
   // Edit float
   const [showEditFloat, setShowEditFloat] = useState(false)
@@ -30,7 +33,7 @@ export function CashScreen() {
   const [editFloatReason, setEditFloatReason] = useState('')
 
   const loadShift = () => {
-    api?.shifts?.getCurrent?.().then((s: any) => setShift(s))
+    api?.shifts?.getCurrent?.().then((s: any) => { setShift(s); setGateLoaded(true) }).catch(() => setGateLoaded(true))
   }
   useEffect(() => {
     loadShift()
@@ -57,6 +60,9 @@ export function CashScreen() {
   }
 
   const empName = employees.find((e: any) => e.id === shift?.employee_id)?.name || ''
+
+  // Loading — wait for API before deciding gate
+  if (!gateLoaded) return <LoadingPlaceholder lines={4} />
 
   // No active shift → show open-shift gate
   if (!shift) {

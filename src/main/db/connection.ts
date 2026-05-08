@@ -27,6 +27,9 @@ export function initDatabase(): void {
   db.pragma('journal_mode = WAL')
   db.pragma('foreign_keys = ON')
   db.pragma('synchronous = FULL')
+  db.pragma('busy_timeout = 5000')
+  db.pragma('cache_size = -64000')   // 64 MB page cache
+  db.pragma('temp_store = MEMORY')
 
   console.log(`[DB] Opened database at ${dbPath}`)
 }

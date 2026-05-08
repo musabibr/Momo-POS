@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { P } from '../../tokens'
 import { Btn } from '../../components/Btn'
 import { Inp, Sel, Field } from '../../components/Inp'
@@ -47,6 +47,7 @@ export function SettingsScreen() {
 function GeneralTab() {
   const [sett, setSett] = useState({ name: '', currency: 'ج.س', cashierDisc: '10', managerDisc: '50', inactivityMins: '10', shiftsRequired: true, requireVoidReason: true })
   const [saved, setSaved] = useState(false)
+  const [shiftOpen, setShiftOpen] = useState(false)
 
   useEffect(() => {
     api?.settings?.getAll?.().then((s: any) => {
@@ -64,9 +65,13 @@ function GeneralTab() {
         })
       }
     })
+    api?.shifts?.getCurrent?.().then((s: any) => setShiftOpen(!!s))
   }, [])
 
   const upd = (k: string, v: any) => setSett(p => ({ ...p, [k]: v }))
+
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (savedTimerRef.current) clearTimeout(savedTimerRef.current) }, [])
 
   async function save() {
     await api?.settings?.set?.('restaurant_name', sett.name)
@@ -78,13 +83,17 @@ function GeneralTab() {
     await api?.settings?.set?.('require_void_reason', sett.requireVoidReason ? '1' : '0')
     setSaved(true)
     toast('تم حفظ الإعدادات ✓')
-    setTimeout(() => setSaved(false), 2200)
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+    savedTimerRef.current = setTimeout(() => setSaved(false), 2200)
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 500 }}>
       <Field label="اسم المطعم"><Inp value={sett.name} onChange={(e: any) => upd('name', e.target.value)} /></Field>
-      <Field label="العملة"><Inp value={sett.currency} onChange={(e: any) => upd('currency', e.target.value)} /></Field>
+      <Field label="العملة">
+        <Inp value={sett.currency} onChange={(e: any) => upd('currency', e.target.value)} disabled={shiftOpen} />
+        {shiftOpen && <div style={{ fontSize: 12, color: P.rose, marginTop: 2 }}>لا يمكن تغيير العملة أثناء وجود وردية مفتوحة</div>}
+      </Field>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
         <Field label="حد خصم الكاشير %"><Inp type="number" value={sett.cashierDisc} onChange={(e: any) => upd('cashierDisc', e.target.value)} /></Field>
         <Field label="حد خصم المدير %"><Inp type="number" value={sett.managerDisc} onChange={(e: any) => upd('managerDisc', e.target.value)} /></Field>
@@ -154,13 +163,17 @@ function ReceiptTab() {
 
   const upd = (k: string, v: string) => setSett(p => ({ ...p, [k]: v }))
 
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (savedTimerRef.current) clearTimeout(savedTimerRef.current) }, [])
+
   async function save() {
     await api?.settings?.set?.('receipt_header', sett.header)
     await api?.settings?.set?.('receipt_footer', sett.footer)
     await api?.settings?.set?.('logo_path', sett.logo)
     setSaved(true)
     toast('تم حفظ إعدادات الإيصال ✓')
-    setTimeout(() => setSaved(false), 2200)
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+    savedTimerRef.current = setTimeout(() => setSaved(false), 2200)
   }
 
   return (
@@ -365,13 +378,17 @@ function LoyaltyTab() {
 
   const upd = (k: string, v: string) => setSett(p => ({ ...p, [k]: v }))
 
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (savedTimerRef.current) clearTimeout(savedTimerRef.current) }, [])
+
   async function save() {
     await api?.settings?.set?.('loyalty_rate', sett.loyalty)
     await api?.settings?.set?.('loyalty_redemption_value', sett.maxDisc)
     await api?.settings?.set?.('auto_vip_threshold', sett.autoVip)
     setSaved(true)
     toast('تم حفظ إعدادات الولاء ✓')
-    setTimeout(() => setSaved(false), 2200)
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+    savedTimerRef.current = setTimeout(() => setSaved(false), 2200)
   }
 
   return (

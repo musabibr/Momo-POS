@@ -10,6 +10,7 @@ import { Toggle } from '../../components/Toggle'
 import { Card } from '../../components/Card'
 import { toast } from '../../components/Toast'
 import { ScrollableTabs, Pagination, usePaginated } from '../../components/layouts'
+import { LoadingPlaceholder } from '../../components/LoadingPlaceholder'
 import { ItemForm } from './components/ItemForm'
 import { GalleryTab } from './components/GalleryTab'
 
@@ -20,9 +21,13 @@ export function MenuScreen() {
   const [items, setItems] = useState<any[]>([])
   const [cats, setCats] = useState<any[]>([])
 
+  const [loading, setLoading] = useState(true)
+
   const load = () => {
-    api?.menu?.listItems?.().then((d: any) => d && setItems(d))
-    api?.menu?.listCategories?.().then((d: any) => d && setCats(d))
+    Promise.all([
+      api?.menu?.listItems?.().then((d: any) => d && setItems(d)),
+      api?.menu?.listCategories?.().then((d: any) => d && setCats(d)),
+    ]).finally(() => setLoading(false))
   }
   useEffect(load, [])
 
@@ -138,6 +143,8 @@ export function MenuScreen() {
   }, [items, filterCat, search])
 
   const itemsPaged = usePaginated(displayItems, 10)
+
+  if (loading) return <LoadingPlaceholder />
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 20, gap: 16 }}>

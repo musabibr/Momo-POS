@@ -3,9 +3,11 @@ import { join } from 'path'
 import { existsSync } from 'fs'
 import { pathToFileURL } from 'url'
 import { initDatabase, getDb } from './db/connection'
+import { ActionLogRepo } from './db/repositories/ActionLogRepo'
 import { runMigrations } from './db/migrations/runner'
-import { runSeed } from './db/seed'
-import { runDemoData } from './db/demo-data'
+// NOTE: runSeed and runDemoData are intentionally NOT imported.
+// The Setup Wizard handles first-run admin creation.
+// Demo data should NEVER run in production.
 import { registerAllIpc } from './ipc/register'
 import { registerBackupIpc, startBackupScheduler } from './ipc/backup'
 import { registerPrinterIpc } from './ipc/printer'
@@ -62,30 +64,62 @@ function createWindow(): void {
   }
 }
 
-app.whenReady().then(() => {
-  // Register custom image protocol before creating the window
-  registerImageProtocol()
-
-  // Initialize database
-  initDatabase()
-  runMigrations()
-  // Seeding is now handled dynamically by seed.ts
-  // runSeed() // Disabled for production to trigger Setup Wizard
-  // runDemoData() // Disabled for production build
-
-  // Register IPC handlers
-  registerAllIpc()
-  registerBackupIpc()
-  registerPrinterIpc()
-  registerReportExportIpc()
-
-  createWindow()
-  startBackupScheduler()
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+const gotLock = app.requestSingleInstanceLock()
+if (!gotLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
   })
-})
+
+  app.whenReady().then(() => {
+    // Register custom image protocol before creating the window
+    registerImageProtocol()
+
+    // Initialize database
+    initDatabase()
+    runMigrations()
+
+    // R3-H4: Auto-close orphan shifts from previous crashes
+    try {
+      const db = getDb()
+      const orphans = db.prepare(`SELECT id, opened_at FROM shifts WHERE closed_at IS NULL ORDER BY opened_at DESC`).all() as any[]
+      if (orphans.length > 1) {
+        for (let i = 1; i < orphans.length; i++) {
+          db.prepare(`UPDATE shifts SET closed_at = datetime('now','localtime'), close_float = open_float WHERE id = ?`).run(orphans[i].id)
+          ActionLogRepo.write('shift_auto_closed_orphan', String(orphans[i].id))
+        }
+        console.log(`[Startup] Auto-closed ${orphans.length - 1} orphan shift(s)`)
+      }
+    } catch (_) {}
+
+    // NOTE: No seed or demo data in production — Setup Wizard handles first-run.
+
+    // Register IPC handlers
+    registerAllIpc()
+    registerBackupIpc()
+    registerPrinterIpc()
+    registerReportExportIpc()
+
+    createWindow()
+
+    // R3-H5: WAL checkpoint on renderer crash
+    if (mainWindow) {
+      mainWindow.webContents.on('render-process-gone', (_e, details) => {
+        console.error('[Renderer] crashed:', details)
+        try { getDb().pragma('wal_checkpoint(TRUNCATE)') } catch (_) {}
+      })
+    }
+    startBackupScheduler()
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    })
+  })
+}
 
 app.on('window-all-closed', () => {
   // WAL checkpoint on shutdown

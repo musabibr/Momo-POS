@@ -29,11 +29,11 @@ export class CategoryRepo {
 
   static delete(id: string) {
     const db = getDb()
-    // Move items to null category
-    db.prepare(`UPDATE items SET cat_id = NULL WHERE cat_id = ?`).run(id)
-    db.prepare(`UPDATE items SET subcat_id = NULL WHERE subcat_id = ?`).run(id)
-    // Move subcategories to no parent
-    db.prepare(`UPDATE categories SET parent_id = NULL WHERE parent_id = ?`).run(id)
-    db.prepare(`DELETE FROM categories WHERE id = ?`).run(id)
+    db.transaction(() => {
+      db.prepare(`UPDATE items SET cat_id = NULL WHERE cat_id = ?`).run(id)
+      db.prepare(`UPDATE items SET subcat_id = NULL WHERE subcat_id = ?`).run(id)
+      db.prepare(`UPDATE categories SET parent_id = NULL WHERE parent_id = ?`).run(id)
+      db.prepare(`DELETE FROM categories WHERE id = ?`).run(id)
+    })()
   }
 }

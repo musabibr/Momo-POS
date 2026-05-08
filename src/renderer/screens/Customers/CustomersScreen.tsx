@@ -8,6 +8,7 @@ import { Badge } from '../../components/TabBar'
 import { Card } from '../../components/Card'
 import { toast } from '../../components/Toast'
 import { TwoPane } from '../../components/layouts'
+import { LoadingPlaceholder } from '../../components/LoadingPlaceholder'
 
 const api = (window as any).api
 
@@ -22,6 +23,7 @@ export function CustomersScreen() {
   const [orderHistory, setOrderHistory] = useState<any[]>([])
   const [topItems, setTopItems] = useState<any[]>([])
   const [newCust, setNewCust] = useState({ name: '', phone: '' })
+  const [loading, setLoading] = useState(true)
 
   const load = (q?: string) => api?.customers?.list?.(q || undefined).then((d: any) => {
     if (d) {
@@ -31,7 +33,7 @@ export function CustomersScreen() {
         if (upd) setSel(upd)
       }
     }
-  })
+  }).finally(() => setLoading(false))
   useEffect(() => { load() }, [])
 
   // Load order history when customer selected
@@ -85,6 +87,8 @@ export function CustomersScreen() {
     setRedeemPts('')
     load()
   }
+
+  if (loading) return <LoadingPlaceholder />
 
   const listPane = (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20, gap: 14, overflow: 'hidden', minHeight: 0 }}>

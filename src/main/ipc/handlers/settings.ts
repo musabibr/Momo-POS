@@ -16,6 +16,17 @@ export function registerReportHandlers() {
   handle('reports:customerStats', (filters) => ReportRepo.customerStats(filters), ['admin', 'manager'])
 }
 
+const ALLOWED_SETTING_KEYS = new Set([
+  'restaurant_name', 'currency', 'tax_rate', 'currency_symbol',
+  'cashier_max_discount_pct', 'manager_max_discount_pct',
+  'inactivity_lock_minutes', 'shifts_required', 'require_void_reason',
+  'loyalty_rate', 'loyalty_redemption_value', 'auto_vip_threshold',
+  'enforce_shift_required', 'default_kitchen_printer', 'default_receipt_printer',
+  'receipt_header', 'receipt_footer', 'logo_path',
+  'backup_usb_path', 'backup_schedule', 'last_backup_at',
+  'expense_categories', 'withdraw_reasons', 'banks',
+])
+
 export function registerSettingsHandlers() {
   // settings:get and getBanks are un-gated — POS reads them pre-session
   handle('settings:get', (key: string) => SettingsRepo.get(key))
@@ -26,6 +37,7 @@ export function registerSettingsHandlers() {
     if (!isSetupPhase && (!session || (!session.permissions?.includes('*') && session.role !== 'admin' && !session.permissions?.includes('admin')))) {
       throw new Error('UNAUTHORIZED')
     }
+    if (!ALLOWED_SETTING_KEYS.has(key)) throw new Error(`مفتاح إعدادات غير مسموح: ${key}`)
     setSettingSchema.parse({ key, value })
     return SettingsRepo.set(key, value)
   })

@@ -9,3 +9,4 @@ CREATE INDEX IF NOT EXISTS idx_inv_stock_item_loc   ON inventory_stock(item_id, 
 CREATE INDEX IF NOT EXISTS idx_action_log_employee  ON action_log(employee_id);
 -- Speeds up ShiftRepo.getCurrent() which scans for closed_at IS NULL
 CREATE INDEX IF NOT EXISTS idx_shifts_closed_at     ON shifts(closed_at);
+INSERT OR REPLACE INTO settings (key, value) VALUES ('schema_version', '009');

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { P } from '../../../tokens'
 import { Card } from '../../../components/Card'
 import { KpiGrid } from '../../../components/layouts'
+import { LoadingPlaceholder } from '../../../components/LoadingPlaceholder'
 
 const api = (window as any).api
 
@@ -9,14 +10,20 @@ export function OverviewTab({ shift }: { shift: any }) {
   const [summary, setSummary] = useState<any>(null)
   const [petty, setPetty] = useState<any[]>([])
   const [expenses, setExpenses] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (shift?.id) {
-      api?.cash?.getRevenueSummary?.(shift.id).then((d: any) => d && setSummary(d))
-      api?.cash?.listPettyCash?.(shift.id).then((d: any) => d && setPetty(d))
-      api?.cash?.listExpenses?.(shift.id).then((d: any) => d && setExpenses(d))
+      setLoading(true)
+      Promise.all([
+        api?.cash?.getRevenueSummary?.(shift.id).then((d: any) => d && setSummary(d)),
+        api?.cash?.listPettyCash?.(shift.id).then((d: any) => d && setPetty(d)),
+        api?.cash?.listExpenses?.(shift.id).then((d: any) => d && setExpenses(d)),
+      ]).finally(() => setLoading(false))
     }
   }, [shift])
+
+  if (loading) return <LoadingPlaceholder />
 
   const total = summary?.total || 0
   const cashSales = summary?.byCash || 0

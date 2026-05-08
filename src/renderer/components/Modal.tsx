@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { P } from '../tokens'
 import { Icon } from './Icon'
 
@@ -12,7 +12,37 @@ interface ModalProps {
 }
 
 export function Modal({ title, onClose, children, width = 440, icon, open = true }: ModalProps) {
+  const panelRef = useRef<HTMLDivElement>(null)
+  const previousFocusRef = useRef<Element | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    previousFocusRef.current = document.activeElement
+    // Focus the panel so keyboard events are captured
+    requestAnimationFrame(() => panelRef.current?.focus())
+    return () => {
+      // Restore focus to previously focused element
+      if (previousFocusRef.current instanceof HTMLElement) {
+        previousFocusRef.current.focus()
+      }
+    }
+  }, [open])
+
   if (!open) return null
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') { onClose(); return }
+    if (e.key !== 'Tab' || !panelRef.current) return
+    const focusable = panelRef.current.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+    if (focusable.length === 0) return
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+  }
+
   return (
     <div
       className="momo-modal-overlay"
@@ -30,12 +60,14 @@ export function Modal({ title, onClose, children, width = 440, icon, open = true
       onClick={onClose}
     >
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
+        tabIndex={-1}
         className="momo-modal-panel"
         onClick={e => e.stopPropagation()}
-        onKeyDown={e => e.key === 'Escape' && onClose()}
+        onKeyDown={handleKeyDown}
         style={{
           background: P.surface,
           borderRadius: 20,
@@ -47,6 +79,7 @@ export function Modal({ title, onClose, children, width = 440, icon, open = true
           boxShadow: '0 24px 80px rgba(88,28,135,.22)',
           border: `1px solid ${P.borderM}`,
           overflow: 'hidden',
+          outline: 'none',
         }}
       >
         <div

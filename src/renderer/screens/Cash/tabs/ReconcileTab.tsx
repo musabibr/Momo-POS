@@ -42,7 +42,7 @@ export function ReconcileTab({ shift, onShiftClosed }: { shift: any; onShiftClos
       // Auto-print Z-Report
       try {
         const data = await api?.cash?.getZReportData?.(shift.id)
-        if (data) api?.printer?.printZReport?.(data).catch(() => {})
+        if (data) api?.printer?.printZReport?.(data).catch(() => toast('تحذير: فشل طباعة تقرير Z — تم حفظ الوردية. يمكن إعادة الطباعة من التقارير'))
       } catch {}
       toast('تم إغلاق الوردية بنجاح ✓')
       setShowConfirm(false)
@@ -106,7 +106,14 @@ export function ReconcileTab({ shift, onShiftClosed }: { shift: any; onShiftClos
       </div>
 
       {/* Close button */}
-      <Btn variant="danger" size="lg" fullWidth icon="check" disabled={!counted} onClick={() => setShowConfirm(true)}>
+      <Btn variant="danger" size="lg" fullWidth icon="check" disabled={!counted} onClick={() => {
+        const absDiff = Math.abs(diff)
+        const threshold = Math.max(1000, expected * 0.05)
+        if (absDiff > threshold) {
+          if (!window.confirm(`الفارق كبير (${diff.toLocaleString()} ج.س) — هل أنت متأكد من إغلاق الوردية؟`)) return
+        }
+        setShowConfirm(true)
+      }}>
         إغلاق الوردية
       </Btn>
 

@@ -43,12 +43,14 @@ export class SupplierRepo {
 
   static deleteSupplier(id: number) {
     const db = getDb()
-    const hasPurchases = db.prepare(`SELECT COUNT(*) as cnt FROM purchases WHERE supplier_id = ?`).get(id) as any
-    if (hasPurchases && hasPurchases.cnt > 0) {
-      throw new Error('لا يمكن حذف مورد لديه مشتريات سابقة')
-    }
-    db.prepare(`DELETE FROM supplier_ingredients WHERE supplier_id = ?`).run(id)
-    db.prepare(`DELETE FROM suppliers WHERE id = ?`).run(id)
+    db.transaction(() => {
+      const hasPurchases = db.prepare(`SELECT COUNT(*) as cnt FROM purchases WHERE supplier_id = ?`).get(id) as any
+      if (hasPurchases && hasPurchases.cnt > 0) {
+        throw new Error('لا يمكن حذف مورد لديه مشتريات سابقة')
+      }
+      db.prepare(`DELETE FROM supplier_ingredients WHERE supplier_id = ?`).run(id)
+      db.prepare(`DELETE FROM suppliers WHERE id = ?`).run(id)
+    })()
   }
 
   static linkSupplierIngredient(supplierId: number, ingredientId: number, price: number) {

@@ -133,13 +133,18 @@ export function POSScreen() {
   }, [])
 
   const [catId, setCatId] = useState('all')
-  const [order, setOrder] = useState<any[]>([])
+  const [order, setOrder] = useState<any[]>(() => {
+    try { const s = localStorage.getItem('momo_active_cart'); return s ? JSON.parse(s) : [] } catch { return [] }
+  })
   const [search, setSearch] = useState('')
   const [discount, setDiscount] = useState(0)
   const [discountType, setDiscountType] = useState('pct')
   const [discountReason, setDiscountReason] = useState('')
   const [showDiscount, setShowDiscount] = useState(false)
   const [payMode, setPayMode] = useState<string | null>(null)
+  const handlePayModeChange = (mode: string) => {
+    setPayMode(mode); setCashIn(''); setCashPart(''); setBankRef('')
+  }
   const [showPay, setShowPay] = useState(false)
   const [cashIn, setCashIn] = useState('')
   const [bank, setBank] = useState(banks[0] || 'Bank')
@@ -221,7 +226,11 @@ export function POSScreen() {
     setVariationItem(null)
   }
 
-  const updQty = (key: string, d: number) => setOrder(prev => prev.map(o => o._key === key ? { ...o, qty: Math.max(0, o.qty + d) } : o).filter(o => o.qty > 0))
+  const updQty = (key: string, d: number) => setOrder(prev => {
+    const next = prev.map(o => o._key === key ? { ...o, qty: Math.max(0, o.qty + d) } : o).filter(o => o.qty > 0)
+    if (next.length === 0) { setDiscount(0); setDiscountReason(''); setDiscountType('pct'); setShowDiscount(false) }
+    return next
+  })
 
   const sub = order.reduce((s, o) => s + (o.unitPrice || o.price) * o.qty, 0)
   const discAmtRaw = discountType === 'pct' ? Math.round(sub * discount / 100) : Number(discount)
@@ -295,10 +304,21 @@ export function POSScreen() {
     }
   }
 
+  // Persist active cart to localStorage on every change (R3-M8)
+  useEffect(() => { try { localStorage.setItem('momo_active_cart', JSON.stringify(order)) } catch {} }, [order])
+
   // Persist held orders to localStorage
   useEffect(() => { try { localStorage.setItem('momo_held_orders', JSON.stringify(held)) } catch {} }, [held])
 
-  const holdOrder = () => { if (!order.length) return; setHeld(p => [...p, { id: Date.now(), items: [...order], time: new Date().toLocaleTimeString('ar-SA') }]); setOrder([]); toast('تم تعليق الطلب') }
+  const holdOrder = () => {
+    if (!order.length) return
+    setHeld(p => {
+      const next = [...p, { id: Date.now(), items: [...order], time: new Date().toLocaleTimeString('ar-SA') }]
+      return next.length > 50 ? next.slice(-50) : next // R3-M10: cap at 50
+    })
+    setOrder([])
+    toast('تم تعليق الطلب')
+  }
   const resumeHeld = (h: any) => { setOrder(h.items); setHeld(p => p.filter((x: any) => x.id !== h.id)); setShowHeld(false); toast('تم استئناف الطلب') }
   const voidOrder = async () => {
     setVoidLoading(true)
@@ -328,8 +348,8 @@ export function POSScreen() {
       <Card style={{ width: 'min(460px,100%)', padding: 32, boxShadow: '0 12px 48px rgba(88,28,135,.12)' }}>
         {/* ── Items List ── */}
         <div style={{ borderBottom: `2px dashed ${P.borderM}`, paddingBottom: 16, marginBottom: 16 }}>
-          {receipt.items.map((it: any) => (
-            <div key={`${it.itemId ?? it.id}_${it.variationLabel ?? ''}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, padding: '6px 0' }}>
+          {receipt.items.map((it: any, i: number) => (
+            <div key={`receipt_${receipt.num}_${i}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, padding: '6px 0' }}>
               <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontWeight: 900, color: P.purple, background: P.purpleXL, padding: '3px 8px', borderRadius: 7, fontSize: 15, minWidth: 32, textAlign: 'center', letterSpacing: '0.5px' }}>×{it.qty}</span>
@@ -535,7 +555,7 @@ export function POSScreen() {
             <div>
               <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
                 {[{ k: 'cash', l: '💵 نقداً' }, { k: 'bank', l: '🏦 بنكي' }, { k: 'split', l: '🔀 مقسم' }].map(({ k, l }) => (
-                  <button key={k} onClick={() => setPayMode(k)} className="pos-pay-btn" style={{ flex: 1, padding: '11px 6px', borderRadius: 11, border: `1.5px solid ${payMode === k ? P.purple : P.borderM}`, background: payMode === k ? P.ghost : 'transparent', color: payMode === k ? P.purple : P.muted, cursor: 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'Cairo,sans-serif' }}>{l}</button>
+                  <button key={k} onClick={() => handlePayModeChange(k)} className="pos-pay-btn" style={{ flex: 1, padding: '11px 6px', borderRadius: 11, border: `1.5px solid ${payMode === k ? P.purple : P.borderM}`, background: payMode === k ? P.ghost : 'transparent', color: payMode === k ? P.purple : P.muted, cursor: 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'Cairo,sans-serif' }}>{l}</button>
                 ))}
               </div>
               {payMode === 'cash' && <div style={{ marginBottom: 10 }}>

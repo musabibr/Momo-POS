@@ -203,7 +203,7 @@ export function UsersScreen() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} style={{ padding: 40, textAlign: 'center', color: P.muted }}>جاري التحميل...</td></tr>
+              <tr><td colSpan={5} style={{ padding: 40, textAlign: 'center' }}><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}><div className="momo-spinner" /><span style={{ fontSize: 14, color: P.muted, fontWeight: 600 }}>جاري التحميل…</span></div></td></tr>
             ) : users.length === 0 ? (
               <tr><td colSpan={5} style={{ padding: 40, textAlign: 'center', color: P.muted }}>لا يوجد مستخدمين</td></tr>
             ) : (

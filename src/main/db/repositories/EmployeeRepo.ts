@@ -66,13 +66,15 @@ export class EmployeeRepo {
 
   static delete(id: number) {
     const db = getDb()
-    const hasOrders = db.prepare(`SELECT COUNT(*) as cnt FROM orders WHERE employee_id = ?`).get(id) as any
-    const hasShifts = db.prepare(`SELECT COUNT(*) as cnt FROM shifts WHERE employee_id = ?`).get(id) as any
-    if ((hasOrders && hasOrders.cnt > 0) || (hasShifts && hasShifts.cnt > 0)) {
-      db.prepare(`UPDATE employees SET active = 0 WHERE id = ?`).run(id)
-    } else {
-      db.prepare(`DELETE FROM employees WHERE id = ?`).run(id)
-    }
+    db.transaction(() => {
+      const hasOrders = db.prepare(`SELECT COUNT(*) as cnt FROM orders WHERE employee_id = ?`).get(id) as any
+      const hasShifts = db.prepare(`SELECT COUNT(*) as cnt FROM shifts WHERE employee_id = ?`).get(id) as any
+      if ((hasOrders?.cnt ?? 0) > 0 || (hasShifts?.cnt ?? 0) > 0) {
+        db.prepare(`UPDATE employees SET active = 0 WHERE id = ?`).run(id)
+      } else {
+        db.prepare(`DELETE FROM employees WHERE id = ?`).run(id)
+      }
+    })()
   }
 
   /**
