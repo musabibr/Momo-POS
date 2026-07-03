@@ -8,17 +8,17 @@ export function runDemoData(): void {
   console.log('[Demo] Generating realistic inflation-adjusted demo data...')
 
   const tx = db.transaction(() => {
-    const pinHash = bcrypt.hashSync('1234', 10)
+    const pwHash = bcrypt.hashSync('1234', 10)
 
     // ── Staff ──
-    const mgrPerms = '["pos_access","pos_void","pos_discount","shift_manage","transactions_view","menu_manage","inventory_manage","purchase_manage","customers_manage","reports_view","users_manage","kitchen_view"]'
+    const mgrPerms = '["pos_access","pos_void","pos_discount","shift_manage","transactions_view","transactions_view_all","kitchen_view","menu_manage","inventory_manage","purchase_manage","customers_manage","reports_view","users_manage"]'
     const cshPerms = '["pos_access","shift_manage","transactions_view"]'
     const kitPerms = '["kitchen_view"]'
 
-    db.prepare(`INSERT INTO employees (name, username, role, pin_hash, password_hash, permissions) VALUES (?,?,?,?,?,?)`).run('سارة عبدالله', 'sara', 'manager', pinHash, pinHash, mgrPerms)
-    db.prepare(`INSERT INTO employees (name, username, role, pin_hash, password_hash, permissions) VALUES (?,?,?,?,?,?)`).run('أحمد محمد', 'ahmed', 'cashier', pinHash, pinHash, cshPerms)
-    db.prepare(`INSERT INTO employees (name, username, role, pin_hash, password_hash, permissions) VALUES (?,?,?,?,?,?)`).run('فاطمة حسن', 'fatima', 'cashier', pinHash, pinHash, cshPerms)
-    db.prepare(`INSERT INTO employees (name, username, role, pin_hash, password_hash, permissions) VALUES (?,?,?,?,?,?)`).run('خالد عثمان', 'khalid', 'kitchen', pinHash, pinHash, kitPerms)
+    db.prepare(`INSERT INTO employees (name, username, role, password_hash, permissions) VALUES (?,?,?,?,?)`).run('سارة عبدالله', 'sara', 'manager', pwHash, mgrPerms)
+    db.prepare(`INSERT INTO employees (name, username, role, password_hash, permissions) VALUES (?,?,?,?,?)`).run('أحمد محمد', 'ahmed', 'cashier', pwHash, cshPerms)
+    db.prepare(`INSERT INTO employees (name, username, role, password_hash, permissions) VALUES (?,?,?,?,?)`).run('فاطمة حسن', 'fatima', 'cashier', pwHash, cshPerms)
+    db.prepare(`INSERT INTO employees (name, username, role, password_hash, permissions) VALUES (?,?,?,?,?)`).run('خالد عثمان', 'khalid', 'kitchen', pwHash, kitPerms)
 
     // ── Customers ──
     const custStmt = db.prepare(`INSERT INTO customers (name,phone,is_vip,is_blacklist,points,total_spend,visit_count) VALUES (?,?,?,?,?,?,?)`)

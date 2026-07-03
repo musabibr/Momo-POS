@@ -6,6 +6,13 @@ import { createMenuItemSchema, updateMenuItemSchema } from '../schemas/menu.sche
 import { getImagesPath } from '../../db/connection'
 import { writeFileSync, existsSync, mkdirSync, unlinkSync } from 'fs'
 import { join } from 'path'
+import { PERM, descendants } from '@shared/permissions'
+
+const MENU_ANY = descendants(PERM.MENU_MANAGE) // menu_manage + items/categories/recipes
+/** POS + anyone with any menu permission can read menu data. */
+const MENU_READ_POS = [PERM.POS_ACCESS, ...MENU_ANY]
+/** listItems is also read by the kitchen production panel. */
+const MENU_LIST_ALL = [PERM.POS_ACCESS, PERM.KITCHEN_VIEW, ...MENU_ANY]
 
 /**
  * Menu IPC handlers — menu items, categories, recipes, gallery.
@@ -13,20 +20,20 @@ import { join } from 'path'
  */
 export function registerMenuHandlers() {
   // ── Menu Items ──────────────────
-  handle('menu:listItems', () => ItemRepo.list(), ['admin', 'manager', 'cashier'])
-  handle('menu:listAvailable', () => ItemRepo.listAvailable(), ['admin', 'manager', 'cashier'])
-  handle('menu:getItem', (id: number) => ItemRepo.getById(id), ['admin', 'manager', 'cashier'])
+  handle('menu:listItems', () => ItemRepo.list(), MENU_LIST_ALL)
+  handle('menu:listAvailable', () => ItemRepo.listAvailable(), MENU_READ_POS)
+  handle('menu:getItem', (id: number) => ItemRepo.getById(id), MENU_READ_POS)
   handle('menu:createItem', (data) => {
     const validated = createMenuItemSchema.parse(data)
     return ItemRepo.create(validated)
-  }, ['admin', 'manager'])
+  }, [PERM.MENU_ITEMS])
   handle('menu:updateItem', (id: number, data) => {
     const validated = updateMenuItemSchema.parse(data)
     return ItemRepo.update(id, validated)
-  }, ['admin', 'manager'])
-  handle('menu:deleteItem', (id: number) => ItemRepo.delete(id), ['admin', 'manager'])
-  handle('menu:setAvailable', (id: number, available: boolean) => ItemRepo.setAvailable(id, available), ['admin', 'manager'])
-  handle('menu:calculateCost', (id: number) => ItemRepo.calculateCost(id), ['admin', 'manager'])
+  }, [PERM.MENU_ITEMS])
+  handle('menu:deleteItem', (id: number) => ItemRepo.delete(id), [PERM.MENU_ITEMS])
+  handle('menu:setAvailable', (id: number, available: boolean) => ItemRepo.setAvailable(id, available), [PERM.MENU_ITEMS])
+  handle('menu:calculateCost', (id: number) => ItemRepo.calculateCost(id), [PERM.MENU_ITEMS])
 
   handle('menu:saveImage', (itemId: number, base64: string) => {
     const MAX_BASE64_SIZE = 4_000_000 // ~3 MB decoded
@@ -44,10 +51,10 @@ export function registerMenuHandlers() {
     writeFileSync(filePath, Buffer.from(data, 'base64'))
     ItemRepo.update(itemId, { imagePath: fileName })
     return fileName
-  }, ['admin', 'manager'])
+  }, [PERM.MENU_ITEMS])
 
   // ── Gallery ──────────────────
-  handle('menu:getGallery', (itemId: number) => ItemRepo.getGallery(itemId), ['admin', 'manager', 'cashier'])
+  handle('menu:getGallery', (itemId: number) => ItemRepo.getGallery(itemId), MENU_READ_POS)
 
   handle('menu:addGalleryImage', (itemId: number, base64: string) => {
     const MAX_BASE64_SIZE = 4_000_000
@@ -64,19 +71,19 @@ export function registerMenuHandlers() {
     const data = base64.replace(/^data:image\/\w+;base64,/, '')
     writeFileSync(filePath, Buffer.from(data, 'base64'))
     return ItemRepo.addGalleryImage(itemId, fileName)
-  }, ['admin', 'manager'])
+  }, [PERM.MENU_ITEMS])
 
   handle('menu:removeGalleryImage', (id: number) => {
     ItemRepo.removeGalleryImage(id)
-  }, ['admin', 'manager'])
+  }, [PERM.MENU_ITEMS])
 
   // ── Categories ──────────────────
-  handle('menu:listCategories', () => CategoryRepo.list(), ['admin', 'manager', 'cashier'])
-  handle('menu:createCategory', (data) => CategoryRepo.create(data), ['admin', 'manager'])
-  handle('menu:updateCategory', (id: string, data) => CategoryRepo.update(id, data), ['admin', 'manager'])
-  handle('menu:deleteCategory', (id: string) => CategoryRepo.delete(id), ['admin', 'manager'])
+  handle('menu:listCategories', () => CategoryRepo.list(), MENU_READ_POS)
+  handle('menu:createCategory', (data) => CategoryRepo.create(data), [PERM.MENU_CATEGORIES])
+  handle('menu:updateCategory', (id: string, data) => CategoryRepo.update(id, data), [PERM.MENU_CATEGORIES])
+  handle('menu:deleteCategory', (id: string) => CategoryRepo.delete(id), [PERM.MENU_CATEGORIES])
 
   // ── Recipes ──────────────────
-  handle('menu:getRecipe', (itemId: number) => RecipeRepo.getRecipe(itemId), ['admin', 'manager'])
-  handle('menu:saveRecipe', (itemId: number, lines: any[]) => RecipeRepo.saveRecipe(itemId, lines), ['admin', 'manager'])
+  handle('menu:getRecipe', (itemId: number) => RecipeRepo.getRecipe(itemId), [PERM.MENU_RECIPES])
+  handle('menu:saveRecipe', (itemId: number, lines: any[]) => RecipeRepo.saveRecipe(itemId, lines), [PERM.MENU_RECIPES])
 }

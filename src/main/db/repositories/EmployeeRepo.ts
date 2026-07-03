@@ -23,8 +23,8 @@ export class EmployeeRepo {
     const pwHash = bcrypt.hashSync(data.password, 10)
     const secHash = data.securityAnswer ? bcrypt.hashSync(data.securityAnswer, 10) : null
     const perms = data.permissions ? JSON.stringify(data.permissions) : '[]'
-    const result = db.prepare(`INSERT INTO employees (name, role, username, password_hash, pin_hash, permissions, security_question, security_answer_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(data.name, data.role, data.username, pwHash, pwHash, perms, data.securityQuestion || null, secHash)
+    const result = db.prepare(`INSERT INTO employees (name, role, username, password_hash, permissions, security_question, security_answer_hash) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+      .run(data.name, data.role, data.username, pwHash, perms, data.securityQuestion || null, secHash)
     return db.prepare(`SELECT ${ADMIN_COLS} FROM employees WHERE id = ?`).get(result.lastInsertRowid)
   }
 
@@ -121,22 +121,32 @@ export class EmployeeRepo {
     return { valid: false }
   }
 
-  static verifyAnyManagerPin(pin: string): { valid: boolean; employeeId?: number } {
-    const managers = getDb().prepare(
-      `SELECT id, password_hash, permissions FROM employees WHERE active = 1 AND (locked_until IS NULL OR locked_until < datetime('now'))`
+  /**
+   * Verify an override PIN (the approver types their own password) against any
+   * active employee holding `requiredPerm` (or '*'). Candidates are filtered by
+   * permission BEFORE any bcrypt compare, so ineligible rows cost nothing.
+   * Returns the approver's id and permissions so callers can attribute the action.
+   */
+  static verifyOverridePin(pin: string, requiredPerm: string): { valid: boolean; employeeId?: number; role?: string; permissions?: string[] } {
+    const rows = getDb().prepare(
+      `SELECT id, role, password_hash, permissions FROM employees WHERE active = 1 AND (locked_until IS NULL OR locked_until < datetime('now'))`
     ).all() as any[]
-    
-    for (const m of managers) {
-      let perms = []
+
+    for (const m of rows) {
+      let perms: string[] = []
       try { perms = JSON.parse(m.permissions) } catch {}
-      if (perms.includes('*') || perms.includes('pos_void')) {
-        // Now using password_hash for the void PIN as well (the user can type their password in the void prompt)
-        if (bcrypt.compareSync(pin, m.password_hash)) {
-          return { valid: true, employeeId: m.id }
-        }
+      if (!perms.includes('*') && !perms.includes(requiredPerm)) continue
+      if (bcrypt.compareSync(pin, m.password_hash)) {
+        return { valid: true, employeeId: m.id, role: m.role, permissions: perms }
       }
     }
     return { valid: false }
+  }
+
+  /** Back-compat wrapper: the void/reset prompts verify against pos_void holders. */
+  static verifyAnyManagerPin(pin: string): { valid: boolean; employeeId?: number } {
+    const r = EmployeeRepo.verifyOverridePin(pin, 'pos_void')
+    return { valid: r.valid, employeeId: r.employeeId }
   }
 
   static getSecurityQuestion(username: string): string | null {

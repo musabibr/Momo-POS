@@ -43,6 +43,7 @@ export { createPurchaseSchema } from './procurement.schemas'
 
 // ── Orders ──────────────────────────────────────────────────────────
 import { z } from 'zod'
+import { ALL_PERMISSION_IDS } from '@shared/permissions'
 
 export const createOrderSchema = z.object({
   clientOrderId: z.string().optional().nullable(),
@@ -64,6 +65,8 @@ export const createOrderSchema = z.object({
   shiftId: z.number().int().optional().nullable(),
   orderType: z.enum(['local', 'takeaway', 'delivery']).optional().nullable(),
   orderNote: z.string().optional().nullable(),
+  /** Override PIN of a pos_discount holder — required when the discount exceeds the session's own allowance. */
+  managerPin: z.string().optional().nullable(),
   items: z.array(z.object({
     itemId: z.number().int(),
     qty: z.number().int().min(1),
@@ -75,12 +78,16 @@ export const createOrderSchema = z.object({
 }).refine(d => (d.discAmount ?? 0) <= d.subtotal, { message: 'مبلغ الخصم أكبر من المجموع الفرعي' })
 
 // ── Employees ──────────────────────────────────────────────────────
+const permissionsArraySchema = z.array(
+  z.string().refine(p => ALL_PERMISSION_IDS.includes(p), { message: 'صلاحية غير معروفة' })
+)
+
 export const createEmployeeSchema = z.object({
   name: z.string().min(1, 'اسم الموظف مطلوب'),
   role: z.enum(['admin', 'manager', 'cashier', 'kitchen']),
   username: z.string().min(3, 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل').regex(/^[a-zA-Z0-9_]+$/, 'يجب أن يحتوي اسم المستخدم على أحرف إنجليزية وأرقام فقط'),
   password: z.string().min(4, 'كلمة المرور يجب أن تكون 4 خانات على الأقل'),
-  permissions: z.array(z.string()).optional(),
+  permissions: permissionsArraySchema.optional(),
   securityQuestion: z.string().optional().nullable(),
   securityAnswer: z.string().optional().nullable(),
 })
@@ -90,7 +97,7 @@ export const updateEmployeeSchema = z.object({
   role: z.enum(['admin', 'manager', 'cashier', 'kitchen']).optional(),
   username: z.string().min(3).regex(/^[a-zA-Z0-9_]+$/).optional(),
   password: z.string().min(4).optional(),
-  permissions: z.array(z.string()).optional(),
+  permissions: permissionsArraySchema.optional(),
   securityQuestion: z.string().optional().nullable(),
   securityAnswer: z.string().optional().nullable(),
   active: z.boolean().optional(),

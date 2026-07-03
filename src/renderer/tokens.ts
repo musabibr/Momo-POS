@@ -1,3 +1,5 @@
+import { hasDomainAccess } from '@shared/permissions'
+
 /** Design tokens — exact palette from the Momo prototype */
 export const P = {
   bg:'#fdf7ff',bg2:'#f8f0ff',bg3:'#f3e8ff',
@@ -47,31 +49,29 @@ export interface NavSlot {
   label: string
   icon: string
   accent: string
-  /** Roles allowed to see this slot in the sidebar. */
-  roles: readonly Role[]
-  perm?: string
+  /** Permission key required to see this slot. Access control is permission-based. */
+  perm: string
 }
 
 export const NAV: readonly NavSlot[] = [
-  { id: 'pos',         label: 'نقطة البيع',  icon: 'pos',    accent: P.pink,    roles: ['admin', 'manager', 'cashier'], perm: 'pos_access' },
-  { id: 'transactions',label: 'المعاملات',   icon: 'note',   accent: P.blue,    roles: ['admin', 'manager', 'cashier'], perm: 'transactions_view' },
-  { id: 'shift',       label: 'الوردية',     icon: 'cash',   accent: P.green,   roles: ['admin', 'manager', 'cashier'], perm: 'shift_manage' },
-  { id: 'catalog',     label: 'القائمة',     icon: 'menu',   accent: P.purple,  roles: ['admin', 'manager'], perm: 'menu_manage' },
-  { id: 'stock',       label: 'المخزون',     icon: 'inv',    accent: '#7c3aed', roles: ['admin', 'manager'], perm: 'inventory_manage' },
-  { id: 'kitchen',     label: 'المطبخ',      icon: 'box',    accent: P.gold,    roles: ['admin', 'manager'], perm: 'kitchen_view' },
-  { id: 'cust',        label: 'العملاء',     icon: 'cust',   accent: P.pink,    roles: ['admin', 'manager'], perm: 'customers_manage' },
-  { id: 'procurement', label: 'المشتريات',   icon: 'usb',    accent: P.gold,    roles: ['admin', 'manager'], perm: 'purchase_manage' },
-  { id: 'insights',    label: 'التقارير',    icon: 'rep',    accent: '#4f46e5', roles: ['admin', 'manager'], perm: 'reports_view' },
-  { id: 'users',       label: 'الموظفون',    icon: 'user',   accent: P.rose,    roles: ['admin'], perm: 'users_manage' },
-  { id: 'setup',       label: 'الإعدادات',   icon: 'sett',   accent: P.muted,   roles: ['admin'], perm: 'settings_manage' },
+  { id: 'pos',         label: 'نقطة البيع',  icon: 'pos',    accent: P.pink,    perm: 'pos_access' },
+  { id: 'transactions',label: 'المعاملات',   icon: 'note',   accent: P.blue,    perm: 'transactions_view' },
+  { id: 'shift',       label: 'الوردية',     icon: 'cash',   accent: P.green,   perm: 'shift_manage' },
+  { id: 'catalog',     label: 'القائمة',     icon: 'menu',   accent: P.purple,  perm: 'menu_manage' },
+  { id: 'stock',       label: 'المخزون',     icon: 'inv',    accent: '#7c3aed', perm: 'inventory_manage' },
+  { id: 'kitchen',     label: 'المطبخ',      icon: 'box',    accent: P.gold,    perm: 'kitchen_view' },
+  { id: 'cust',        label: 'العملاء',     icon: 'cust',   accent: P.pink,    perm: 'customers_manage' },
+  { id: 'procurement', label: 'المشتريات',   icon: 'usb',    accent: P.gold,    perm: 'purchase_manage' },
+  { id: 'insights',    label: 'التقارير',    icon: 'rep',    accent: '#4f46e5', perm: 'reports_view' },
+  { id: 'users',       label: 'الموظفون',    icon: 'user',   accent: P.rose,    perm: 'users_manage' },
+  { id: 'setup',       label: 'الإعدادات',   icon: 'sett',   accent: P.muted,   perm: 'settings_manage' },
 ] as const
 
-/** Filter NAV by current session permissions. Kitchen role is handled separately
- *  (lands on KitchenConsole, no sidebar). */
-export function navForRole(role: string, perms: string[] = []): NavSlot[] {
-  if (role === 'kitchen') return []
-  if (perms.includes('*')) return NAV as any
-  return NAV.filter((n: any) => perms.includes(n.perm))
+/** Filter NAV by current session permissions. A slot shows if the user holds the
+ *  slot's permission OR any sub-permission within that domain. '*' sees everything. */
+export function navForRole(perms: string[] = []): NavSlot[] {
+  if (perms.includes('*')) return NAV as NavSlot[]
+  return NAV.filter(n => hasDomainAccess(perms, n.perm))
 }
 
 export const IC: Record<string, string> = {

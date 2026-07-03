@@ -19,9 +19,13 @@ import { UsersScreen } from './screens/Users/UsersScreen'
 import { SessionProvider, useSession } from './hooks/useSession'
 import { useInactivityLock } from './hooks/useInactivityLock'
 import { useViewport } from './ds/useViewport'
+import { isKitchenOnly } from '@shared/permissions'
+import { NAV } from './tokens'
+import { Icon } from './components/Icon'
+import { Btn } from './components/Btn'
 
 function AppInner() {
-  const { session, loading, login, logout } = useSession()
+  const { session, loading, login, logout, canDomain } = useSession()
   const [active, setActive] = useState<Screen>('pos')
   const [firstRun, setFirstRun] = useState<boolean | null>(null)
   const viewport = useViewport()
@@ -41,21 +45,26 @@ function AppInner() {
     }).catch(() => setFirstRun(true)) // on error, show wizard (safe side)
   }, [])
 
-  // Reset to default screen for the role when session changes
+  // Reset to the first allowed screen whenever permissions change or the active
+  // screen becomes disallowed (e.g. direct navigation to an ungranted screen).
   useEffect(() => {
     if (session) {
-      const allowed = navForRole(session.role, session.permissions)
-      if (allowed.length > 0 && !allowed.find((n: any) => n.id === active)) {
+      const allowed = navForRole(session.permissions)
+      if (allowed.length > 0 && !allowed.find(n => n.id === active)) {
         setActive(allowed[0].id)
       }
     }
-  }, [session?.role, session?.permissions])
+  }, [session?.permissions, active])
 
   function renderScreen() {
     if (!session) return null
+    // Per-screen permission guard, derived from NAV so it can't drift from the sidebar.
+    // Uses domain access so a user with only a sub-permission still reaches the screen.
+    const slot = NAV.find(n => n.id === active)
+    if (slot && !canDomain(slot.perm)) return null
     switch (active) {
       case 'pos':         return <POSScreen />
-      case 'transactions':return <TransactionsScreen role={session.role} employeeId={session.employee?.id} />
+      case 'transactions':return <TransactionsScreen />
       case 'shift':       return <CashScreen />
       case 'catalog':     return <MenuScreen />
       case 'stock':       return <InventoryScreen />
@@ -83,11 +92,30 @@ function AppInner() {
   // Login gate — no session means show login
   if (!session) return <div className="app-fadein"><LoginScreen onLogin={login} /><ToastHost /></div>
 
-  // Kitchen role — fullscreen, no sidebar
-  if (session.role === 'kitchen') {
+  // Kitchen-only user (permission is exactly kitchen_view) — fullscreen KDS, no sidebar.
+  if (isKitchenOnly(session.permissions)) {
     return (
       <div className="app-fadein" style={{ height: '100vh', direction: 'rtl', fontFamily: 'Cairo, sans-serif', background: P.bg }}>
-        <KitchenConsole />
+        <KitchenConsole onLogout={logout} />
+        <ToastHost />
+      </div>
+    )
+  }
+
+  // No permissions at all — show a friendly locked panel rather than an empty shell.
+  if (navForRole(session.permissions).length === 0) {
+    return (
+      <div className="app-fadein" style={{ height: '100vh', direction: 'rtl', fontFamily: 'Cairo, sans-serif', background: P.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', maxWidth: 380, padding: 32 }}>
+          <div style={{ width: 64, height: 64, borderRadius: 16, background: `${P.rose}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            <Icon name="lock" size={28} color={P.rose} />
+          </div>
+          <h2 style={{ fontSize: 20, fontWeight: 900, color: P.plum, margin: '0 0 8px' }}>لا توجد صلاحيات</h2>
+          <div style={{ color: P.muted, fontSize: 15, marginBottom: 24, lineHeight: 1.6 }}>
+            حسابك لا يملك أي صلاحية للوصول إلى شاشات النظام. يرجى التواصل مع المسؤول.
+          </div>
+          <Btn variant="secondary" onClick={logout}>تسجيل الخروج</Btn>
+        </div>
         <ToastHost />
       </div>
     )
@@ -110,7 +138,7 @@ function AppInner() {
           {renderScreen()}
         </div>
       </main>
-      {mobileNav && <MobileNav active={active} onChange={setActive} />}
+      {mobileNav && <MobileNav active={active} onChange={setActive} permissions={session.permissions} />}
       <ToastHost />
     </div>
   )

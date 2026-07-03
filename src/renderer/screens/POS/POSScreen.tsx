@@ -10,6 +10,7 @@ import { toast } from '../../components/Toast'
 import { ProductImage } from '../../components/ProductImage'
 import { Card } from '../../components/Card'
 import { v4 as uuid } from 'uuid'
+import { useSession } from '../../hooks/useSession'
 
 const api = (window as any).api
 
@@ -105,8 +106,12 @@ const VariationModal = ({ item, onConfirm, onClose }: any) => {
 }
 
 export function POSScreen() {
+  const { session, can } = useSession()
   const [items, setItems] = useState<any[]>([])
   const [cats, setCats] = useState<any[]>([])
+  // Discount caps (percent) — mirror of the server policy; the server is authoritative.
+  const [discCaps, setDiscCaps] = useState({ cashier: 10, manager: 50 })
+  const [managerPin, setManagerPin] = useState('')
   const [banks, setBanks] = useState<string[]>(['بنك الخرطوم', 'بنك أمدرمان', 'فيصل الإسلامي']) // Fallback
   // Shift gate state — mirrors the server-side rule. If the admin enabled
   // shifts_required and no shift is open, POS refuses to render.
@@ -129,6 +134,13 @@ export function POSScreen() {
     api?.menu?.listAvailable?.().then((d: any) => d && setItems(d)).catch(() => {})
     api?.menu?.listCategories?.().then((d: any) => d && setCats(d)).catch(() => {})
     api?.settings?.getBanks?.().then((d: any) => { if (d && d.length) setBanks(d) }).catch(() => {})
+    Promise.all([
+      api?.settings?.get?.('cashier_max_discount_pct'),
+      api?.settings?.get?.('manager_max_discount_pct'),
+    ]).then(([c, m]: any[]) => setDiscCaps({
+      cashier: c != null && !isNaN(parseFloat(c)) ? parseFloat(c) : 10,
+      manager: m != null && !isNaN(parseFloat(m)) ? parseFloat(m) : 50,
+    })).catch(() => {})
     reloadGate()
   }, [])
 
@@ -236,6 +248,13 @@ export function POSScreen() {
   const discAmtRaw = discountType === 'pct' ? Math.round(sub * discount / 100) : Number(discount)
   const discAmt = Math.min(discAmtRaw, sub) // never exceed subtotal
   const total = Math.max(0, sub - discAmt)
+
+  // Discount authorization (UI mirror of the server policy). A discount needs a
+  // manager's approval PIN when the cashier lacks pos_discount, or the discount
+  // exceeds their own role cap. '*' holders are always allowed, uncapped.
+  const discPct = sub > 0 ? (discAmt / sub) * 100 : 0
+  const ownDiscCap = (session?.role === 'manager' || session?.role === 'admin') ? discCaps.manager : discCaps.cashier
+  const discountNeedsApproval = discAmt > 0 && !can('*') && (!can('pos_discount') || discPct > ownDiscCap)
   const cashInNum = parseInt(cashIn || '0')
   const change = payMode === 'cash' ? Math.max(0, cashInNum - total) : 0
   const bankPart = payMode === 'split' ? Math.max(0, total - parseInt(cashPart || '0')) : 0
@@ -248,6 +267,7 @@ export function POSScreen() {
       if (discountType === 'pct' && discount > 100) { toast('الخصم لا يمكن أن يتجاوز 100%'); return }
       if (discAmt > sub) { toast('مبلغ الخصم أكبر من الإجمالي'); return }
       if (!discountReason.trim()) { toast('يرجى إدخال سبب الخصم'); return }
+      if (discountNeedsApproval && !managerPin.trim()) { toast('هذا الخصم يتطلب موافقة المدير (PIN)'); return }
     }
     if (payMode === 'split') {
       const cp = parseInt(cashPart || '0')
@@ -265,6 +285,7 @@ export function POSScreen() {
         subtotal: sub, discAmount: discAmt, discType: showDiscount ? discountType : null,
         discValue: showDiscount ? Number(discount) : null,
         discReason: showDiscount ? discountReason : null,
+        managerPin: showDiscount && discountNeedsApproval ? managerPin : null,
         total, payMode, bankName: payMode !== 'cash' ? bank : null,
         bankRef: payMode !== 'cash' ? bankRef : null,
         cashIn: payMode === 'cash' && cashIn ? parseInt(cashIn) : null,
@@ -294,7 +315,7 @@ export function POSScreen() {
         time: new Date().toLocaleTimeString('ar-SA'), orderType, orderNote, tableNum: orderType === 'local' && tableNum ? tableNum : null
       }
       setReceipt(receiptData)
-      setOrder([]); setPayMode(null); setShowPay(false); setDiscount(0); setDiscountReason(''); setCashIn(''); setBankRef(''); setCashPart(''); setShowDiscount(false); setCustMatch(null); setOrderNote(''); setTableNum(''); setOrderType('local');
+      setOrder([]); setPayMode(null); setShowPay(false); setDiscount(0); setDiscountReason(''); setManagerPin(''); setCashIn(''); setBankRef(''); setCashPart(''); setShowDiscount(false); setCustMatch(null); setOrderNote(''); setTableNum(''); setOrderType('local');
       toast('✓ تم تأكيد الطلب')
       // Printing happens via the "طباعة" button on the receipt screen
     } catch (err: any) {
@@ -546,6 +567,14 @@ export function POSScreen() {
             }} placeholder={discountType === 'pct' ? 'الحد الأقصى 100%' : `الحد الأقصى ${sub.toLocaleString()} ج.س`} type="number" max={discountType === 'pct' ? 100 : sub} style={{ marginBottom: 7 }} />
             {discountType === 'amt' && discount > 0 && discount >= sub && <div style={{ fontSize: 11, color: P.rose, fontWeight: 700, marginBottom: 4, textAlign: 'center' }}>⚠ الخصم يساوي كامل المبلغ</div>}
             <Inp value={discountReason} onChange={(e: any) => setDiscountReason(e.target.value)} placeholder="سبب الخصم (مطلوب)" style={{ marginBottom: 8 }} />
+            {discountNeedsApproval && (
+              <>
+                <div style={{ fontSize: 12, color: P.rose, fontWeight: 700, marginBottom: 6, textAlign: 'center' }}>
+                  ⚠ هذا الخصم يتجاوز صلاحيتك — مطلوب موافقة مدير
+                </div>
+                <Inp type="password" value={managerPin} onChange={(e: any) => setManagerPin(e.target.value)} placeholder="رمز موافقة المدير (PIN)" style={{ marginBottom: 8 }} />
+              </>
+            )}
             <Btn variant="pink" fullWidth onClick={() => setShowDiscount(false)}>تطبيق</Btn>
           </div>}
 

@@ -1,14 +1,15 @@
 import React from 'react'
-import { P, NAV, Screen } from '../tokens'
+import { P, Screen, navForRole } from '../tokens'
 import { Icon } from '../components/Icon'
 
 interface MobileNavProps {
   active: Screen
   onChange: (s: Screen) => void
+  permissions?: string[]
 }
 
-export function MobileNav({ active, onChange }: MobileNavProps) {
-  const allowed = NAV.slice(0, 5)
+export function MobileNav({ active, onChange, permissions }: MobileNavProps) {
+  const allowed = navForRole(permissions).slice(0, 5)
   return (
     <div className="mobile-nav">
       {allowed.map(n => {

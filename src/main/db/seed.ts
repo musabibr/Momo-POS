@@ -198,7 +198,6 @@ export function runSeed(): void {
       ['backup_usb_path', ''],
       ['app_version', '2.0.0'],
       ['currency', 'SDG'],
-      ['schema_version', '009'],
       ['printer1_port', ''],
       ['printer2_port', ''],
       ['logo_path', ''],
@@ -210,10 +209,10 @@ export function runSeed(): void {
     for (const [key, value] of defaultSettings) settingsStmt.run(key, value)
 
     // ════════════════════════════════════════════════════════════
-    //  DEFAULT ADMIN (username: admin, pass: 1234, pin: 1234)
+    //  DEFAULT ADMIN (username: admin, pass: 1234)
     // ════════════════════════════════════════════════════════════
-    const pinHash = bcrypt.hashSync('1234', 10)
-    db.prepare(`INSERT INTO employees (name, username, role, pin_hash, password_hash, permissions) VALUES (?, ?, ?, ?, ?, ?)`).run('المدير العام', 'admin', 'admin', pinHash, pinHash, '["*"]')
+    const pwHash = bcrypt.hashSync('1234', 10)
+    db.prepare(`INSERT INTO employees (name, username, role, password_hash, permissions) VALUES (?, ?, ?, ?, ?)`).run('المدير العام', 'admin', 'admin', pwHash, '["*"]')
   })
 
   try {

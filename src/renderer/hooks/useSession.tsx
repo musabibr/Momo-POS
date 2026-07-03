@@ -1,7 +1,14 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
-import type { Role } from '../tokens'
+import { hasPermission, hasDomainAccess } from '@shared/permissions'
 
 const api = (window as any).api
+
+/** Coerce a permissions value (array, JSON string, or nullish) into a string[]. */
+function normalizePerms(value: any): string[] {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string') { try { const p = JSON.parse(value); return Array.isArray(p) ? p : [] } catch { return [] } }
+  return []
+}
 
 export interface SessionData {
   employee: {
@@ -21,6 +28,10 @@ interface SessionContextValue {
   loading: boolean
   login: (username: string, pass: string) => Promise<{ valid: boolean; locked?: boolean; lockedUntil?: string; employee?: any }>
   logout: () => Promise<void>
+  /** True if the current session holds any of the given permission(s) — parent group implies children. */
+  can: (required: string | string[]) => boolean
+  /** True if the session holds ANY permission within a domain group (for nav/screen visibility). */
+  canDomain: (groupId: string) => boolean
 }
 
 const SessionContext = createContext<SessionContextValue>({
@@ -28,6 +39,8 @@ const SessionContext = createContext<SessionContextValue>({
   loading: true,
   login: async () => ({ valid: false }),
   logout: async () => {},
+  can: () => false,
+  canDomain: () => false,
 })
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
@@ -38,10 +51,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     api?.session?.current?.().then((s: any) => {
       if (s && s.employeeId) {
+        const perms = normalizePerms(s.permissions)
         setSession({
-          employee: { id: s.employeeId, name: s.name, username: s.username, role: s.role, permissions: s.permissions || [], active: 1 },
+          employee: { id: s.employeeId, name: s.name, username: s.username, role: s.role, permissions: perms, active: 1 },
           role: s.role,
-          permissions: s.permissions || []
+          permissions: perms
         })
       }
     }).catch(() => {}).finally(() => setLoading(false))
@@ -51,8 +65,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await api?.session?.login?.(username, pass)
       if (result?.valid && result.employee) {
-        let perms = []
-        try { perms = JSON.parse(result.employee.permissions) } catch {}
+        const perms = normalizePerms(result.employee.permissions)
         setSession({
           employee: { ...result.employee, permissions: perms },
           role: result.employee.role,
@@ -71,8 +84,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setSession(null)
   }, [])
 
+  const can = useCallback((required: string | string[]) => {
+    return hasPermission(session?.permissions, Array.isArray(required) ? required : [required])
+  }, [session?.permissions])
+
+  const canDomain = useCallback((groupId: string) => {
+    return hasDomainAccess(session?.permissions, groupId)
+  }, [session?.permissions])
+
   return (
-    <SessionContext.Provider value={{ session, loading, login, logout }}>
+    <SessionContext.Provider value={{ session, loading, login, logout, can, canDomain }}>
       {children}
     </SessionContext.Provider>
   )

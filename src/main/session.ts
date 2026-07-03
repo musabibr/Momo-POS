@@ -9,6 +9,7 @@
 export interface Session {
   employeeId: number
   name: string
+  username?: string
   role: 'admin' | 'manager' | 'cashier' | 'kitchen' | string
   permissions: string[]
 }

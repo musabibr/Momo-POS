@@ -4,16 +4,14 @@
  */
 import { ipcMain } from 'electron'
 import { PDFExporter } from '../reports/pdfExporter'
-import { getSession } from '../session'
+import { checkPermission } from './helpers'
+import { PERM } from '@shared/permissions'
 
 export function registerReportExportIpc(): void {
   ipcMain.handle('reports:exportPDF', async (_event, reportType: string, filters: any) => {
     try {
-      // RBAC: admin or manager only
-      const session = getSession()
-      if (!session || !['admin', 'manager'].includes(session.role)) {
-        return { error: 'UNAUTHORIZED' }
-      }
+      const denied = checkPermission([PERM.REPORTS_VIEW])
+      if (denied) return denied
 
       let html: string
       switch (reportType) {
