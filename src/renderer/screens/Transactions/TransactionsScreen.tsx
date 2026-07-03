@@ -8,6 +8,7 @@ import { Icon } from '../../components/Icon'
 import { Card } from '../../components/Card'
 import { toast } from '../../components/Toast'
 import { ResponsiveTable, Pagination, usePaginated } from '../../components/layouts'
+import { useSession } from '../../hooks/useSession'
 
 const api = (window as any).api
 
@@ -18,8 +19,12 @@ const today = () => fmtDate(new Date())
 const weekAgo = () => { const d = new Date(); d.setDate(d.getDate() - 7); return fmtDate(d) }
 const monthStart = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01` }
 
-export function TransactionsScreen({ role, employeeId }: { role: string; employeeId?: number }) {
-  const isManager = role === 'admin' || role === 'manager'
+export function TransactionsScreen() {
+  const { can } = useSession()
+  // Who can see everyone's orders vs only their own.
+  const canViewAll = can('transactions_view_all')
+  // Who may void/correct without a manager's approval PIN.
+  const canVoid = can('pos_void')
   const [orders, setOrders] = useState<any[]>([])
   const [employees, setEmployees] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -50,7 +55,7 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
   const [correcting, setCorrecting] = useState(false)
 
   useEffect(() => {
-    if (isManager) api?.employees?.list?.().then((d: any) => d && setEmployees(d))
+    if (canViewAll) api?.employees?.list?.().then((d: any) => d && setEmployees(d))
     api?.settings?.get?.('require_void_reason').then((v: any) => {
       if (v != null) setRequireReason(v === '1' || v === 'true' || v === true)
     })
@@ -64,11 +69,11 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
       if (endDate) filters.endDate = endDate + ' 23:59:59'
       if (fStatus !== 'all') filters.status = fStatus
       if (fPayMode !== 'all') filters.payMode = fPayMode
-      if (isManager && fEmployee !== 'all') filters.employeeId = parseInt(fEmployee)
+      if (canViewAll && fEmployee !== 'all') filters.employeeId = parseInt(fEmployee)
       if (fOrderType !== 'all') filters.orderType = fOrderType
       if (searchNum.trim()) filters.orderNum = parseInt(searchNum)
 
-      const d = isManager ? await api?.orders?.list?.(filters) : await api?.orders?.myOrders?.(filters)
+      const d = canViewAll ? await api?.orders?.list?.(filters) : await api?.orders?.myOrders?.(filters)
       setOrders(Array.isArray(d) ? d : [])
     } catch (_) { toast('خطأ في تحميل المعاملات') }
     setLoading(false)
@@ -94,19 +99,18 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
     empMap.set(o.employee_id, e)
   })
 
+  // pos_void holders act directly; everyone else must supply a manager's
+  // approval PIN, which the server verifies against a pos_void holder.
   const doVoid = async () => {
-    if (requireReason && (!voidPin || !voidReason)) { toast('أدخل رمز PIN وسبب الإلغاء'); return }
+    if (requireReason && !voidReason) { toast('أدخل سبب الإلغاء'); return }
+    if (!canVoid && !voidPin) { toast('أدخل رمز موافقة المدير'); return }
     setVoiding(true)
     try {
-      if (requireReason) {
-        const r = await api?.employees?.verifyAnyManagerPin?.(voidPin)
-        if (!r?.valid) { toast('رمز PIN خاطئ'); setVoidPin(''); setVoiding(false); return }
-      }
-      await api?.orders?.void?.(showVoid.id, employeeId || 1, voidReason || 'بدون سبب')
+      await api?.orders?.void?.(showVoid.id, voidReason || 'بدون سبب', canVoid ? undefined : voidPin)
       toast('تم إلغاء الطلب ✓')
       setShowVoid(null); setVoidPin(''); setVoidReason(''); setSelected(null)
       load()
-    } catch (err: any) { toast(err?.message || 'خطأ في إلغاء الطلب') }
+    } catch (err: any) { toast(err?.message || 'خطأ في إلغاء الطلب'); setVoidPin('') }
     setVoiding(false)
   }
 
@@ -135,7 +139,7 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
         <div>
           <div style={{ fontSize: 24, fontWeight: 900, color: P.plum }}>المعاملات</div>
-          <div style={{ fontSize: 15, color: P.muted }}>{isManager ? 'جميع المعاملات' : 'معاملاتي'} · {orders.length} طلب</div>
+          <div style={{ fontSize: 15, color: P.muted }}>{canViewAll ? 'جميع المعاملات' : 'معاملاتي'} · {orders.length} طلب</div>
         </div>
         <Btn variant="secondary" icon="refresh" onClick={load} disabled={loading}>{loading ? 'جاري التحميل…' : 'تحديث'}</Btn>
       </div>
@@ -193,7 +197,7 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
               <option value="takeaway">سفري</option>
             </select>
           </div>
-          {isManager && (
+          {canViewAll && (
             <div style={{ minWidth: 130 }}>
               <div style={{ fontSize: 13, color: P.muted, marginBottom: 3, fontWeight: 700 }}>الموظف</div>
               <select value={fEmployee} onChange={e => setFEmployee(e.target.value)}
@@ -230,8 +234,8 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
         ))}
       </div>
 
-      {/* Per-employee breakdown (manager only) */}
-      {isManager && empMap.size > 1 && (
+      {/* Per-employee breakdown (only when viewing all employees' orders) */}
+      {canViewAll && empMap.size > 1 && (
         <Card style={{ padding: '12px 16px' }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: P.plum, marginBottom: 8 }}>مبيعات حسب الموظف</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -261,7 +265,7 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
             <table style={{ width: '100%', minWidth: 700, borderCollapse: 'collapse', fontSize: 14, fontFamily: 'Cairo,sans-serif' }}>
               <thead>
                 <tr style={{ background: P.bg2 }}>
-                  {['#', 'التاريخ', 'النوع', 'الأصناف', 'الإجمالي', 'الدفع', ...(isManager ? ['الموظف'] : []), 'الحالة', ''].map(h => (
+                  {['#', 'التاريخ', 'النوع', 'الأصناف', 'الإجمالي', 'الدفع', ...(canViewAll ? ['الموظف'] : []), 'الحالة', ''].map(h => (
                     <th key={h} style={{ padding: '10px 10px', fontSize: 12, fontWeight: 800, color: P.plum, textAlign: 'right', borderBottom: `2px solid ${P.borderM}`, whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -302,7 +306,7 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
                             </div>
                           )}
                         </td>
-                        {isManager && <td style={{ padding: '10px', color: P.muted, fontSize: 12 }}>{emp?.name || '—'}</td>}
+                        {canViewAll && <td style={{ padding: '10px', color: P.muted, fontSize: 12 }}>{emp?.name || '—'}</td>}
                         <td style={{ padding: '10px' }}>
                           {isVoided ? <Badge label="ملغي" color={P.rose} bg={P.roseXL} /> : <Badge label="مؤكد" color={P.green} bg={P.greenXL} />}
                         </td>
@@ -312,7 +316,7 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
                       </tr>
                       {isExpanded && (
                         <tr key={`${o.id}-detail`} style={{ background: P.bg2 }}>
-                          <td colSpan={isManager ? 9 : 8} style={{ padding: '10px 16px', borderBottom: `1.5px solid ${P.border}` }}>
+                          <td colSpan={canViewAll ? 9 : 8} style={{ padding: '10px 16px', borderBottom: `1.5px solid ${P.border}` }}>
                             <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                               {/* Items list */}
                               <div style={{ flex: 2, minWidth: 200 }}>
@@ -339,7 +343,7 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
                               {/* Actions */}
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 90 }}>
                                 <Btn variant="secondary" onClick={() => reprint(o)} style={{ fontSize: 11, padding: '4px 8px' }}>🖨 طباعة</Btn>
-                                {o.status === 'confirmed' && isManager && <Btn variant="secondary" onClick={() => { setSelected(o) }} style={{ fontSize: 11, padding: '4px 8px' }}>✎ إجراءات</Btn>}
+                                {o.status === 'confirmed' && <Btn variant="secondary" onClick={() => { setSelected(o) }} style={{ fontSize: 11, padding: '4px 8px' }}>✎ إجراءات</Btn>}
                               </div>
                             </div>
                           </td>
@@ -396,19 +400,19 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
           </div>
           <div style={{ display: 'flex', gap: 10, fontSize: 14, color: P.faint, marginBottom: 16, flexWrap: 'wrap' }}>
             <span>⏰ {selected.created_at?.slice(0,16).replace('T',' ')}</span>
-            {isManager && (() => { const e = employees.find((x:any) => x.id === selected.employee_id); return e ? <span>👤 {e.name}</span> : null })()}
+            {canViewAll && (() => { const e = employees.find((x:any) => x.id === selected.employee_id); return e ? <span>👤 {e.name}</span> : null })()}
             {selected.status === 'voided' && <Badge label="ملغي" color={P.rose} bg={P.roseXL} />}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <Btn variant="secondary" icon="print" fullWidth onClick={() => reprint(selected)}>إعادة طباعة</Btn>
-            {selected.status === 'confirmed' && isManager && (
+            {selected.status === 'confirmed' && (
               <Btn variant="primary" icon="layers" fullWidth onClick={() => {
                 setCorrItems((selected.items || []).map((it: any) => ({ ...it, newQty: it.qty })))
                 setShowCorrect(selected); setCorrReason(''); setCorrPin('')
                 setSelected(null)
               }}>تصحيح</Btn>
             )}
-            {selected.status === 'confirmed' && isManager && (
+            {selected.status === 'confirmed' && (
               <Btn variant="danger" icon="close" fullWidth onClick={() => { setShowVoid(selected); setVoidPin(''); setVoidReason('') }}>إلغاء</Btn>
             )}
           </div>
@@ -427,14 +431,14 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
             <div style={{ fontSize: 18, fontWeight: 900, color: P.rose, marginTop: 8 }}>{showVoid.total?.toLocaleString()} ج.س</div>
           </div>
           {requireReason && (
-            <>
-              <Field label="سبب الإلغاء" required><Inp value={voidReason} onChange={(e: any) => setVoidReason(e.target.value)} placeholder="مثال: خطأ في الطلب" autoFocus /></Field>
-              <Field label="رمز PIN لمدير/مسؤول" required><Inp type="password" value={voidPin} onChange={(e: any) => setVoidPin(e.target.value)} placeholder="أدخل PIN المدير" /></Field>
-            </>
+            <Field label="سبب الإلغاء" required><Inp value={voidReason} onChange={(e: any) => setVoidReason(e.target.value)} placeholder="مثال: خطأ في الطلب" autoFocus /></Field>
+          )}
+          {!canVoid && (
+            <Field label="رمز موافقة المدير" required><Inp type="password" value={voidPin} onChange={(e: any) => setVoidPin(e.target.value)} placeholder="PIN صاحب صلاحية الإلغاء" /></Field>
           )}
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <Btn variant="secondary" style={{ flex: 1 }} onClick={() => setShowVoid(null)}>تراجع</Btn>
-            <Btn variant="danger" style={{ flex: 1 }} disabled={voiding || (requireReason && (!voidPin || !voidReason))} onClick={doVoid}>
+            <Btn variant="danger" style={{ flex: 1 }} disabled={voiding || (requireReason && !voidReason) || (!canVoid && !voidPin)} onClick={doVoid}>
               {voiding ? 'جاري الإلغاء…' : 'تأكيد الإلغاء'}
             </Btn>
           </div>
@@ -495,26 +499,22 @@ export function TransactionsScreen({ role, employeeId }: { role: string; employe
             )
           })()}
           {requireReason && (
-            <>
-              <Field label="سبب التصحيح" required><Inp value={corrReason} onChange={(e: any) => setCorrReason(e.target.value)} placeholder="مثال: العميل غير رأيه" autoFocus /></Field>
-              <Field label="رمز PIN لمدير/مسؤول" required><Inp type="password" value={corrPin} onChange={(e: any) => setCorrPin(e.target.value)} placeholder="أدخل PIN المدير" /></Field>
-            </>
+            <Field label="سبب التصحيح" required><Inp value={corrReason} onChange={(e: any) => setCorrReason(e.target.value)} placeholder="مثال: العميل غير رأيه" autoFocus /></Field>
+          )}
+          {!canVoid && (
+            <Field label="رمز موافقة المدير" required><Inp type="password" value={corrPin} onChange={(e: any) => setCorrPin(e.target.value)} placeholder="PIN صاحب صلاحية الإلغاء" /></Field>
           )}
           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
             <Btn variant="secondary" style={{ flex: 1 }} onClick={() => setShowCorrect(null)}>تراجع</Btn>
-            <Btn variant="primary" style={{ flex: 1 }} disabled={correcting || (requireReason && (!corrPin || !corrReason)) || !corrItems.some((it: any) => it.newQty !== it.qty)} onClick={async () => {
+            <Btn variant="primary" style={{ flex: 1 }} disabled={correcting || (requireReason && !corrReason) || (!canVoid && !corrPin) || !corrItems.some((it: any) => it.newQty !== it.qty)} onClick={async () => {
               setCorrecting(true)
               try {
-                if (requireReason) {
-                  const r = await api?.employees?.verifyAnyManagerPin?.(corrPin)
-                  if (!r?.valid) { toast('رمز PIN خاطئ'); setCorrPin(''); setCorrecting(false); return }
-                }
                 const changes = corrItems.filter((it: any) => it.newQty !== it.qty).map((it: any) => ({ orderItemId: it.id, newQty: it.newQty }))
-                await api?.orders?.correct?.(showCorrect.id, corrReason || 'بدون سبب', changes)
+                await api?.orders?.correct?.(showCorrect.id, corrReason || 'بدون سبب', changes, canVoid ? undefined : corrPin)
                 toast('✓ تم تصحيح الطلب')
                 setShowCorrect(null); setCorrReason(''); setCorrPin('')
                 load()
-              } catch (err: any) { toast(err?.message || 'خطأ في التصحيح') }
+              } catch (err: any) { toast(err?.message || 'خطأ في التصحيح'); setCorrPin('') }
               setCorrecting(false)
             }}>
               {correcting ? 'جاري التصحيح…' : 'تأكيد التصحيح'}

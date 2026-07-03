@@ -8,6 +8,8 @@ import { createReadStream } from 'fs'
 import { execSync } from 'child_process'
 import { getSession } from '../session'
 import { EmployeeRepo } from '../db/repositories/EmployeeRepo'
+import { checkPermission } from './helpers'
+import { hasPermission, PERM } from '@shared/permissions'
 
 let backupMutex = false
 let schedulerInterval: any = null
@@ -126,10 +128,10 @@ async function runBackup(targetPath: string): Promise<{ path: string; timestamp:
 export function registerBackupIpc(): void {
   ipcMain.handle('backup:run', async (_event, targetPath: string) => {
     try {
-      // RBAC: admin or manager only — but allow during setup wizard (≤1 employees)
+      // RBAC: settings managers only — but allow during setup wizard (≤1 employees)
       const session = getSession()
       const isSetupPhase = EmployeeRepo.list().length <= 1
-      if (!isSetupPhase && (!session || !['admin', 'manager'].includes(session.role))) {
+      if (!isSetupPhase && !hasPermission(session?.permissions, [PERM.SETTINGS_BACKUP])) {
         return { error: 'UNAUTHORIZED' }
       }
       // Path validation: prevent writing to arbitrary locations
@@ -150,6 +152,8 @@ export function registerBackupIpc(): void {
 
   ipcMain.handle('backup:preFlightSnapshot', async (_event, opName: string) => {
     try {
+      const denied = checkPermission([PERM.SETTINGS_BACKUP])
+      if (denied) return denied
       const path = preFlightSnapshot(opName || 'manual')
       return { data: { path } }
     } catch (err: any) {
@@ -159,11 +163,8 @@ export function registerBackupIpc(): void {
 
   ipcMain.handle('backup:restore', async (_event, backupPath: string) => {
     try {
-      // RBAC: admin only
-      const session = getSession()
-      if (!session || session.role !== 'admin') {
-        return { error: 'UNAUTHORIZED' }
-      }
+      const denied = checkPermission([PERM.SETTINGS_BACKUP])
+      if (denied) return denied
       if (!backupPath) throw new Error('مسار النسخة الاحتياطية مطلوب')
 
       // Allow restoring from any user-chosen directory
@@ -183,8 +184,12 @@ export function registerBackupIpc(): void {
         if (manifest.schema_version) {
           const db = getDb()
           const currentVer = (db.prepare(`SELECT value FROM settings WHERE key='schema_version'`).get() as any)?.value
-          if (manifest.schema_version !== currentVer) {
-            throw new Error(`إصدار قاعدة البيانات في النسخة (${manifest.schema_version}) لا يطابق النسخة الحالية (${currentVer})`)
+          // A backup from an OLDER schema is fine — migrations re-run on relaunch.
+          // Only refuse backups from a NEWER schema than this build understands.
+          const backupVer = parseInt(manifest.schema_version, 10)
+          const localVer = parseInt(currentVer, 10)
+          if (Number.isFinite(backupVer) && Number.isFinite(localVer) && backupVer > localVer) {
+            throw new Error(`النسخة الاحتياطية من إصدار أحدث (${manifest.schema_version}) من النسخة الحالية (${currentVer})`)
           }
         }
       }
@@ -222,6 +227,8 @@ export function registerBackupIpc(): void {
 
   ipcMain.handle('backup:listUsbPaths', async () => {
     try {
+      const denied = checkPermission([PERM.SETTINGS_BACKUP])
+      if (denied) return denied
       if (process.platform === 'win32') {
         // Use PowerShell instead of deprecated wmic
         const output = execSync(
@@ -241,9 +248,15 @@ export function registerBackupIpc(): void {
     }
   })
 
-  // Native folder picker for backup destination
+  // Native folder picker for backup destination — also used by the setup wizard
+  // (pre-session), so allow the setup phase like backup:run.
   ipcMain.handle('backup:pickFolder', async () => {
     try {
+      const isSetupPhase = EmployeeRepo.list().length <= 1
+      if (!isSetupPhase) {
+        const denied = checkPermission([PERM.SETTINGS_BACKUP])
+        if (denied) return denied
+      }
       const win = BrowserWindow.getFocusedWindow()
       const result = await dialog.showOpenDialog(win!, {
         title: 'اختر مجلد النسخ الاحتياطي',
@@ -259,6 +272,8 @@ export function registerBackupIpc(): void {
   // Native folder picker for selecting a backup to restore
   ipcMain.handle('backup:pickRestoreFolder', async () => {
     try {
+      const denied = checkPermission([PERM.SETTINGS_BACKUP])
+      if (denied) return denied
       const win = BrowserWindow.getFocusedWindow()
       const result = await dialog.showOpenDialog(win!, {
         title: 'اختر مجلد النسخة الاحتياطية للاستعادة',

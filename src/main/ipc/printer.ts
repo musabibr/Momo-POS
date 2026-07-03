@@ -14,6 +14,8 @@
 
 import { ipcMain, BrowserWindow, shell, app } from 'electron'
 import { getDb } from '../db/connection'
+import { checkPermission } from './helpers'
+import { PERM } from '@shared/permissions'
 import { cashierReceipt, kitchenTicket, zReport, purchaseOrder } from '../print/templates'
 import type { ReceiptData, KitchenTicketData, ZReportData, POData } from '../print/templates'
 import { buildCashierReceiptHtml, buildKitchenTicketHtml, buildZReportHtml, buildTestPageHtml } from '../print/receiptHtml'
@@ -171,6 +173,7 @@ export function registerPrinterIpc(): void {
   // Get list of system printers
   ipcMain.handle('printer:getSystemPrinters', async () => {
     try {
+      const denied = checkPermission([PERM.SETTINGS_PRINTERS]); if (denied) return denied
       const printers = await getSystemPrinters()
       const mapped = printers.map(p => ({
         name: p.name,
@@ -187,6 +190,7 @@ export function registerPrinterIpc(): void {
   // Save printer assignment
   ipcMain.handle('printer:setAssignment', async (_event, role: string, printerName: string) => {
     try {
+      const denied = checkPermission([PERM.SETTINGS_PRINTERS]); if (denied) return denied
       const key = role === 'kitchen' ? 'printer_kitchen_name' : 'printer_cashier_name'
       setSetting(key, printerName)
       return { data: { success: true } }
@@ -198,6 +202,7 @@ export function registerPrinterIpc(): void {
   // Get current assignments
   ipcMain.handle('printer:getAssignments', async () => {
     try {
+      const denied = checkPermission([PERM.SETTINGS_PRINTERS]); if (denied) return denied
       return {
         data: {
           cashier: getSetting('printer_cashier_name'),
@@ -213,6 +218,7 @@ export function registerPrinterIpc(): void {
   // Set silent mode
   ipcMain.handle('printer:setSilentMode', async (_event, silent: boolean) => {
     try {
+      const denied = checkPermission([PERM.SETTINGS_PRINTERS]); if (denied) return denied
       setSetting('printer_silent_mode', silent ? '1' : '0')
       return { data: { success: true } }
     } catch (err: any) {
@@ -224,6 +230,7 @@ export function registerPrinterIpc(): void {
 
   ipcMain.handle('printer:print', async (_event, receiptData: ReceiptData) => {
     try {
+      const denied = checkPermission([PERM.POS_ACCESS, PERM.TRANSACTIONS_VIEW]); if (denied) return denied
       const header = getSetting('receipt_header') || 'مومو POS'
       const footer = getSetting('receipt_footer') || 'شكراً لزيارتكم'
       const html = buildCashierReceiptHtml(receiptData, header, footer)
@@ -258,6 +265,7 @@ export function registerPrinterIpc(): void {
 
   ipcMain.handle('printer:printKitchen', async (_event, ticketData: KitchenTicketData) => {
     try {
+      const denied = checkPermission([PERM.POS_ACCESS, PERM.TRANSACTIONS_VIEW, PERM.KITCHEN_VIEW]); if (denied) return denied
       const html = buildKitchenTicketHtml(ticketData)
       const printerName = await resolvePrinter('kitchen')
       const silent = isSilentMode()
@@ -289,6 +297,7 @@ export function registerPrinterIpc(): void {
 
   ipcMain.handle('printer:printZReport', async (_event, reportData: ZReportData) => {
     try {
+      const denied = checkPermission([PERM.SHIFT_MANAGE, PERM.REPORTS_VIEW]); if (denied) return denied
       const name = getSetting('restaurant_name') || 'مومو'
       const html = buildZReportHtml(reportData, name)
       const printerName = await resolvePrinter('cashier')
@@ -320,6 +329,7 @@ export function registerPrinterIpc(): void {
 
   ipcMain.handle('printer:printPO', async (_event, poData: POData) => {
     try {
+      const denied = checkPermission([PERM.PURCHASE_MANAGE]); if (denied) return denied
       const name = getSetting('restaurant_name') || 'مومو'
       const text = purchaseOrder(poData, name)
       // PO doesn't have an HTML template yet — use cashier printer for now
@@ -354,6 +364,7 @@ export function registerPrinterIpc(): void {
 
   ipcMain.handle('printer:testPrint', async (_event, printerNum: number) => {
     try {
+      const denied = checkPermission([PERM.SETTINGS_PRINTERS]); if (denied) return denied
       const role = printerNum === 2 ? 'kitchen' : 'cashier'
       const printerName = await resolvePrinter(role as any)
       const silent = isSilentMode()
@@ -384,6 +395,7 @@ export function registerPrinterIpc(): void {
 
   ipcMain.handle('printer:previewPDF', async (_event, receiptData: ReceiptData) => {
     try {
+      const denied = checkPermission([PERM.POS_ACCESS, PERM.TRANSACTIONS_VIEW]); if (denied) return denied
       const { dialog } = require('electron')
       const { canceled, filePath: savePath } = await dialog.showSaveDialog({
         title: 'حفظ الإيصال كـ PDF',
@@ -463,6 +475,7 @@ pre { white-space: pre-wrap; word-break: break-word; font-family: 'Courier New',
 
   ipcMain.handle('printer:saveShiftReportPDF', async (_event, reportHtml: string) => {
     try {
+      const denied = checkPermission([PERM.SHIFT_MANAGE, PERM.REPORTS_VIEW]); if (denied) return denied
       const { dialog } = require('electron')
       const { canceled, filePath: savePath } = await dialog.showSaveDialog({
         title: 'حفظ تقرير الوردية كـ PDF',

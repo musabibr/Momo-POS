@@ -9,14 +9,16 @@ export function registerSessionHandlers() {
     if (!result.valid) return result
     const emp = result.employee
     if (!emp) return { valid: false }
-    
-    let permissions = []
+
+    let permissions: string[] = []
     try { permissions = JSON.parse(emp.permissions) } catch {}
 
-    const session: Session = { employeeId: emp.id, name: emp.name, role: emp.role, permissions }
+    const session: Session = { employeeId: emp.id, name: emp.name, username: emp.username, role: emp.role, permissions }
     setSession(session)
     ActionLogRepo.write('SESSION_LOGIN', JSON.stringify({ employeeId: emp.id, name: emp.name, username }), emp.id)
-    return { valid: true, employee: emp }
+    // Return permissions already parsed so the renderer's login and current-session
+    // paths are symmetric (both receive an array).
+    return { valid: true, employee: { ...emp, permissions } }
   })
 
   handle('session:logout', () => {

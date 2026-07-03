@@ -12,6 +12,11 @@ export default defineConfig({
           index: resolve(__dirname, 'src/main/index.ts')
         }
       }
+    },
+    resolve: {
+      alias: {
+        '@shared': resolve(__dirname, 'src/shared')
+      }
     }
   },
   preload: {
@@ -22,6 +27,11 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, 'src/preload/index.ts')
         }
+      }
+    },
+    resolve: {
+      alias: {
+        '@shared': resolve(__dirname, 'src/shared')
       }
     }
   },
@@ -38,7 +48,16 @@ export default defineConfig({
     },
     resolve: {
       alias: {
-        '@renderer': resolve(__dirname, 'src/renderer')
+        '@renderer': resolve(__dirname, 'src/renderer'),
+        '@shared': resolve(__dirname, 'src/shared')
+      }
+    },
+    server: {
+      // The renderer root is src/renderer, but it imports the shared permission
+      // module from src/shared (outside the root). Allow the dev server to serve
+      // files from the project root so that cross-root import resolves in dev.
+      fs: {
+        allow: [resolve(__dirname)]
       }
     }
   }

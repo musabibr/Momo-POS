@@ -1,10 +1,8 @@
 import React from 'react'
-import { P, NAV, Screen, Role, navForRole, NavSlot } from '../tokens'
+import { P, Screen, navForRole, NavSlot } from '../tokens'
 import { Icon } from '../components/Icon'
+import { ROLE_LABELS } from '@shared/permissions'
 
-const ROLE_LABELS: Record<string, string> = {
-  admin: 'مسؤول', manager: 'مدير', cashier: 'كاشير', kitchen: 'مطبخ'
-}
 const ROLE_COLORS: Record<string, string> = {
   admin: P.purple, manager: P.pink, cashier: P.green, kitchen: P.gold
 }
@@ -20,7 +18,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ active, onChange, collapsed, role, permissions, employee, onLogout }: SidebarProps) {
-  const visibleNav = navForRole(role, permissions)
+  const visibleNav = navForRole(permissions)
 
   return (
     <div className="app-sidebar sidebar-grad" style={{

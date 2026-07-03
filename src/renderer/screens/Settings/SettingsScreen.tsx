@@ -415,10 +415,6 @@ function BackupTab() {
   const [backing, setBacking] = useState(false)
   const [schedule, setSchedule] = useState('shift')
 
-  const [showReset, setShowReset] = useState(false)
-  const [resetPin, setResetPin] = useState('')
-  const [confirmReset, setConfirmReset] = useState(false)
-
   useEffect(() => {
     api?.settings?.getAll?.().then((s: any) => {
       if (!s) return
@@ -445,18 +441,6 @@ function BackupTab() {
       }
     } catch (e: any) { toast(e.message || 'فشل النسخ الاحتياطي', 'error') }
     setBacking(false)
-  }
-
-  async function resetData() {
-    try {
-      const r = await api?.employees?.verifyAnyManagerPin?.(resetPin)
-      if (!r?.valid) { toast('كلمة المرور خاطئة أو ليس لديك صلاحية مدير'); setResetPin(''); return }
-      if (!confirmReset) { setConfirmReset(true); return }
-      await api?.backup?.preFlightSnapshot?.('factoryReset')
-      await api?.settings?.factoryReset?.()
-      toast('تم إعادة ضبط المصنع — سيتم إعادة التشغيل')
-      setShowReset(false); setResetPin(''); setConfirmReset(false)
-    } catch { toast('خطأ في إعادة الضبط') }
   }
 
   return (
@@ -497,21 +481,6 @@ function BackupTab() {
         </div>
       </div>
 
-      <div style={{ background: '#fff7f7', border: `1.5px solid ${P.roseL}`, borderRadius: 14, padding: 18, marginTop: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}><Icon name="alert" size={17} color={P.rose} /><span style={{ fontWeight: 800, color: P.rose, fontSize: 15 }}>منطقة الخطر</span></div>
-        <div style={{ fontSize: 14, color: P.rose, marginBottom: 14 }}>مسح وتصفير قواعد البيانات. يتم أخذ نسخة احتياطية تلقائياً قبل المسح.</div>
-        <Btn variant="danger" onClick={() => { setShowReset(true); setConfirmReset(false) }}>إعادة ضبط المصنع</Btn>
-      </div>
-
-      <Modal open={showReset} onClose={() => { setShowReset(false); setResetPin('') }} title="تأكيد إعادة الضبط" icon="alert" width={360}>
-        <div style={{ textAlign: 'center', marginBottom: 18 }}>
-          <div style={{ width: 54, height: 54, borderRadius: '50%', background: P.roseXL, border: `2px solid ${P.roseL}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}><Icon name="alert" size={26} color={P.rose} /></div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: P.plum, marginBottom: 7 }}>{confirmReset ? '⚠️ تأكيد نهائي — لا يمكن التراجع!' : 'هل أنت متأكد تماماً؟'}</div>
-          <div style={{ fontSize: 14, color: P.muted }}>{confirmReset ? 'اضغط مرة أخرى لتأكيد المسح النهائي' : 'سيتم مسح جميع بيانات المطعم والطلبات.'}</div>
-        </div>
-        <Field label="أدخل كلمة مرور المدير لتأكيد الإجراء"><Inp type="password" value={resetPin} onChange={(e: any) => setResetPin(e.target.value)} autoFocus /></Field>
-        <div style={{ display: 'flex', gap: 10 }}><Btn variant="secondary" onClick={() => setShowReset(false)} style={{ flex: 1 }}>إلغاء</Btn><Btn variant="danger" onClick={resetData} style={{ flex: 1 }}>{confirmReset ? '🗑️ تأكيد المسح النهائي' : 'نعم، مسح البيانات'}</Btn></div>
-      </Modal>
 
     </div>
   )

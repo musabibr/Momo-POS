@@ -1,15 +1,14 @@
 import { ipcMain } from 'electron'
 import { ZodError } from 'zod'
-import { getSession, Session } from '../session'
+import { getSession } from '../session'
 import { SettingsRepo } from '../db/repositories/SettingsRepo'
 import { ShiftRepo } from '../db/repositories/ShiftRepo'
-
-export type Role = 'admin' | 'manager' | 'cashier' | 'kitchen' | string
+import { hasPermission } from '@shared/permissions'
 
 /**
  * In-memory rate limiter for auth-sensitive IPC channels.
  * Limits to MAX_CALLS per WINDOW_MS per channel+key combination.
- * The key is derived from the first argument (e.g. employee ID for login).
+ * The key is derived from the first argument (e.g. username for login).
  */
 const rateLimitMap: Map<string, { count: number; resetAt: number }> = new Map()
 const RATE_LIMIT_MAX = 15
@@ -35,35 +34,47 @@ function rateLimitCheck(channel: string, key?: string): void {
   }
 }
 
-/** Channels that require rate limiting (auth endpoints) */
+/**
+ * Channels that require rate limiting (auth endpoints).
+ * Keyed by first arg (username) so one account can't exhaust another's budget —
+ * except PIN verification, which is keyed by channel only: keying by the PIN
+ * would give every wrong guess a fresh bucket, defeating the limiter.
+ */
 const RATE_LIMITED_CHANNELS = new Set([
-  'session:login', 'employees:verifyPin', 'employees:verifyAnyManagerPin'
+  'session:login', 'employees:getSecurityQuestion', 'employees:resetPasswordWithSecurityAnswer',
 ])
+const RATE_LIMITED_BY_CHANNEL_ONLY = new Set(['employees:verifyAnyManagerPin'])
+
+/**
+ * Check the current session against required permission keys.
+ * Returns null when allowed, or an `{ error }` object to return to the caller.
+ * Semantics: `[]` = any authenticated session; non-empty = any-of; '*' passes all.
+ * For raw `ipcMain.handle` sites that manage their own {data}/{error} shapes.
+ */
+export function checkPermission(required: readonly string[]): { error: 'UNAUTHORIZED' } | null {
+  const session = getSession()
+  if (!session) return { error: 'UNAUTHORIZED' }
+  if (!hasPermission(session.permissions, required)) return { error: 'UNAUTHORIZED' }
+  return null
+}
 
 /**
  * Register an IPC handler with optional RBAC guard.
- * When `requiredPermissions` is provided the handler rejects with UNAUTHORIZED
- * if the current session does not have '*' or one of the required permissions.
- * For backward compatibility, checking for 'admin' will also pass if session.role is 'admin'.
+ * `requiredPermissions` semantics:
+ *   - undefined  → public channel, no session needed
+ *   - []         → any authenticated session
+ *   - non-empty  → session must hold '*' or at least one of the listed permission keys
+ * Guards take PERMISSION KEYS (pos_access, menu_manage, …) — never role names.
  */
 export function handle(channel: string, fn: (...args: any[]) => any, requiredPermissions?: readonly string[]) {
   ipcMain.handle(channel, async (_event, ...args) => {
     try {
-      // Rate-limit auth-sensitive channels (keyed by first arg, e.g. employee ID)
       if (RATE_LIMITED_CHANNELS.has(channel)) rateLimitCheck(channel, args[0] != null ? String(args[0]) : undefined)
+      if (RATE_LIMITED_BY_CHANNEL_ONLY.has(channel)) rateLimitCheck(channel)
 
-      if (requiredPermissions && requiredPermissions.length > 0) {
-        const session = getSession()
-        if (!session) return { error: 'UNAUTHORIZED' }
-        
-        const perms = session.permissions || []
-        const hasPerm = perms.includes('*') || requiredPermissions.some(p => 
-          perms.includes(p) || (p === 'admin' && session.role === 'admin')
-        )
-        
-        if (!hasPerm) {
-          return { error: 'UNAUTHORIZED' }
-        }
+      if (requiredPermissions) {
+        const denied = checkPermission(requiredPermissions)
+        if (denied) return denied
       }
       const result = await fn(...args)
       return { data: result }

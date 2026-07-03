@@ -129,8 +129,8 @@ const api = {
     create: (data: any) => invoke('orders:create', data),
     list: (filters?: any) => invoke('orders:list', filters),
     get: (id: number) => invoke('orders:get', id),
-    void: (orderId: number, employeeId: number, reason: string) => invoke('orders:void', orderId, employeeId, reason),
-    correct: (orderId: number, reason: string, correctedItems: any[]) => invoke('orders:correct', orderId, reason, correctedItems),
+    void: (orderId: number, reason: string, managerPin?: string) => invoke('orders:void', orderId, reason, managerPin),
+    correct: (orderId: number, reason: string, correctedItems: any[], managerPin?: string) => invoke('orders:correct', orderId, reason, correctedItems, managerPin),
     myOrders: (filters?: any) => invoke('orders:myOrders', filters),
     salesSummary: (filters?: any) => invoke('orders:salesSummary', filters),
     itemRanking: (filters?: any) => invoke('orders:itemRanking', filters),
@@ -158,7 +158,6 @@ const api = {
     create: (data: any) => invoke('employees:create', data),
     update: (id: number, data: any) => invoke('employees:update', id, data),
     delete: (id: number) => invoke('employees:delete', id),
-    login: (username: string, pass: string) => invokeRaw('employees:login', username, pass),
     getSecurityQuestion: (username: string) => invokeRaw('employees:getSecurityQuestion', username),
     resetPasswordWithSecurityAnswer: (username: string, answer: string, newPassword: string) => invokeRaw('employees:resetPasswordWithSecurityAnswer', username, answer, newPassword),
     verifyAnyManagerPin: (pin: string) => invokeRaw('employees:verifyAnyManagerPin', pin),
@@ -226,6 +225,8 @@ const api = {
     restore: (backupPath: string) => invoke('backup:restore', backupPath),
     pickFolder: () => invoke('backup:pickFolder'),
     pickRestoreFolder: () => invoke('backup:pickRestoreFolder'),
+    preFlightSnapshot: (opName?: string) => invoke('backup:preFlightSnapshot', opName),
+    listUsbPaths: () => invoke('backup:listUsbPaths'),
   },
 
   // ── PRINTER ─────────────────────────────────────────────────────

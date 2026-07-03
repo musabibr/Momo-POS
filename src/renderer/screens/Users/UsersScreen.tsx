@@ -5,32 +5,11 @@ import { Inp, Field } from '../../components/Inp'
 import { Btn } from '../../components/Btn'
 import { Modal } from '../../components/Modal'
 import { toast } from '../../components/Toast'
+import { PERMISSION_TREE, ROLE_PRESETS, ROLE_LABELS, parentOf } from '@shared/permissions'
 
 const api = (window as any).api
 
-const ROLES = [
-  { id: 'admin', label: 'مسؤول (Admin)' },
-  { id: 'manager', label: 'مدير (Manager)' },
-  { id: 'cashier', label: 'كاشير (Cashier)' },
-  { id: 'kitchen', label: 'مطبخ (Kitchen)' },
-]
-
-const PERMISSIONS = [
-  { id: '*', label: 'الوصول الكامل (Superadmin)', desc: 'يمنح جميع الصلاحيات في النظام دون استثناء' },
-  { id: 'pos_access', label: 'الوصول لنقطة البيع', desc: 'إنشاء طلبات جديدة في الـ POS' },
-  { id: 'pos_void', label: 'إلغاء الطلبات', desc: 'صلاحية إلغاء طلب مدفوع واسترجاع المبلغ' },
-  { id: 'pos_discount', label: 'تطبيق الخصومات', desc: 'إضافة خصم على الفاتورة' },
-  { id: 'shift_manage', label: 'إدارة الورديات', desc: 'فتح وإغلاق الوردية وتسوية النقد' },
-  { id: 'transactions_view', label: 'سجل المعاملات', desc: 'رؤية جميع المعاملات السابقة' },
-  { id: 'kitchen_view', label: 'شاشة المطبخ', desc: 'إدارة الطلبات من شاشة المطبخ' },
-  { id: 'menu_manage', label: 'إدارة القائمة', desc: 'تعديل الأصناف والأسعار' },
-  { id: 'inventory_manage', label: 'إدارة المخزون', desc: 'تعديل الكميات وجرد المخزون' },
-  { id: 'purchase_manage', label: 'إدارة المشتريات', desc: 'إنشاء أوامر الشراء والموردين' },
-  { id: 'customers_manage', label: 'إدارة العملاء', desc: 'رؤية قاعدة بيانات العملاء' },
-  { id: 'reports_view', label: 'التقارير', desc: 'الوصول إلى لوحة المبيعات والتقارير المالية' },
-  { id: 'users_manage', label: 'إدارة الموظفين', desc: 'إضافة أو تعديل المستخدمين والصلاحيات' },
-  { id: 'settings_manage', label: 'إعدادات النظام', desc: 'تغيير إعدادات الطابعات والنسخ الاحتياطي' },
-]
+const ROLES = (['admin', 'manager', 'cashier', 'kitchen'] as const).map(id => ({ id, label: ROLE_LABELS[id] }))
 
 export function UsersScreen() {
   const [users, setUsers] = useState<any[]>([])
@@ -166,17 +145,30 @@ export function UsersScreen() {
 
   const togglePermission = (perm: string) => {
     if (perm === '*') {
-      if (permissions.includes('*')) setPermissions([])
-      else setPermissions(['*'])
+      setPermissions(permissions.includes('*') ? [] : ['*'])
       return
     }
-    
-    if (permissions.includes('*')) return // * overrides all
-    
+    if (permissions.includes('*')) return // superadmin overrides all
+
+    const parent = parentOf(perm)
+    if (parent) {
+      // A child checkbox: only editable when its parent group isn't granted
+      // (the group already implies all children).
+      if (permissions.includes(parent)) return
+      setPermissions(permissions.includes(perm)
+        ? permissions.filter(p => p !== perm)
+        : [...permissions, perm])
+      return
+    }
+
+    // A group/atomic node.
+    const node = PERMISSION_TREE.find(n => n.id === perm)
+    const childIds = node?.children?.map(c => c.id) ?? []
     if (permissions.includes(perm)) {
       setPermissions(permissions.filter(p => p !== perm))
     } else {
-      setPermissions([...permissions, perm])
+      // Granting the group makes its children implicit — drop any explicit child grants.
+      setPermissions([...permissions.filter(p => !childIds.includes(p)), perm])
     }
   }
 
@@ -269,10 +261,17 @@ export function UsersScreen() {
               </Field>
 
               <Field label="المسمى الوظيفي">
-                <select value={role} onChange={(e: any) => setRole(e.target.value)} style={{ width: '100%', height: 44, borderRadius: 10, background: P.bg, border: `1px solid ${P.border}`, color: P.plum, fontSize: 15, padding: '0 12px', outline: 'none', fontFamily: 'Cairo, sans-serif' }}>
+                <select value={role} onChange={(e: any) => {
+                  const r = e.target.value
+                  setRole(r)
+                  // Applying a role fills the permission checklist with its preset;
+                  // the checklist stays editable afterwards.
+                  const preset = ROLE_PRESETS[r]
+                  if (preset) setPermissions([...preset])
+                }} style={{ width: '100%', height: 44, borderRadius: 10, background: P.bg, border: `1px solid ${P.border}`, color: P.plum, fontSize: 15, padding: '0 12px', outline: 'none', fontFamily: 'Cairo, sans-serif' }}>
                   {ROLES.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
                 </select>
-                <div style={{ fontSize: 12, color: P.muted, marginTop: 4 }}>المسمى الوظيفي لا يؤثر على الصلاحيات، استخدم الجدول لتحديد الصلاحيات الفردية.</div>
+                <div style={{ fontSize: 12, color: P.muted, marginTop: 4 }}>اختيار المسمى الوظيفي يعبّئ الصلاحيات الافتراضية له — يمكنك تعديلها بحرية من القائمة.</div>
               </Field>
 
               <div style={{ height: 1, background: P.border, margin: '8px 0' }} />
@@ -301,28 +300,63 @@ export function UsersScreen() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 500, overflowY: 'auto', paddingRight: 8 }}>
-                {PERMISSIONS.map(p => {
-                  const isChecked = permissions.includes(p.id) || (permissions.includes('*') && p.id !== '*')
-                  const disabled = permissions.includes('*') && p.id !== '*'
+                {PERMISSION_TREE.map(node => {
+                  const superOn = permissions.includes('*')
+                  // With '*' selected, every row shows checked; '*' itself stays toggleable.
+                  const nodeChecked = superOn || permissions.includes(node.id)
+                  const nodeDisabled = superOn && node.id !== '*'
                   return (
-                    <label key={p.id} style={{ 
-                      display: 'flex', alignItems: 'flex-start', gap: 12, cursor: disabled ? 'default' : 'pointer',
-                      padding: 12, borderRadius: 10, background: isChecked ? P.surface : 'transparent',
-                      border: `1px solid ${isChecked ? P.purple : P.border}`, opacity: disabled ? 0.6 : 1,
-                      transition: 'all .2s'
-                    }}>
-                      <input 
-                        type="checkbox" 
-                        checked={isChecked} 
-                        onChange={() => togglePermission(p.id)}
-                        disabled={disabled}
-                        style={{ width: 18, height: 18, accentColor: P.purple, marginTop: 2 }} 
-                      />
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: isChecked ? P.purple : P.plum }}>{p.label}</div>
-                        <div style={{ fontSize: 12, color: P.muted, marginTop: 2, lineHeight: 1.4 }}>{p.desc}</div>
-                      </div>
-                    </label>
+                    <div key={node.id} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <label style={{
+                        display: 'flex', alignItems: 'flex-start', gap: 12, cursor: nodeDisabled ? 'default' : 'pointer',
+                        padding: 12, borderRadius: 10, background: nodeChecked ? P.surface : 'transparent',
+                        border: `1px solid ${nodeChecked ? P.purple : P.border}`, opacity: nodeDisabled ? 0.6 : 1,
+                        transition: 'all .2s'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={nodeChecked}
+                          onChange={() => togglePermission(node.id)}
+                          disabled={nodeDisabled}
+                          style={{ width: 18, height: 18, accentColor: P.purple, marginTop: 2 }}
+                        />
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: nodeChecked ? P.purple : P.plum }}>{node.label}</div>
+                          <div style={{ fontSize: 12, color: P.muted, marginTop: 2, lineHeight: 1.4 }}>{node.desc}</div>
+                        </div>
+                      </label>
+
+                      {node.children && node.children.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingRight: 26, borderRight: `2px solid ${P.border}`, marginRight: 10 }}>
+                          {node.children.map(child => {
+                            // The group (or *) grants every child implicitly.
+                            const impliedByParent = superOn || permissions.includes(node.id)
+                            const childChecked = impliedByParent || permissions.includes(child.id)
+                            const childDisabled = impliedByParent
+                            return (
+                              <label key={child.id} style={{
+                                display: 'flex', alignItems: 'flex-start', gap: 10, cursor: childDisabled ? 'default' : 'pointer',
+                                padding: '8px 10px', borderRadius: 8, background: childChecked ? P.surface : 'transparent',
+                                border: `1px solid ${childChecked ? P.purpleL : P.border}`, opacity: childDisabled ? 0.55 : 1,
+                                transition: 'all .2s'
+                              }}>
+                                <input
+                                  type="checkbox"
+                                  checked={childChecked}
+                                  onChange={() => togglePermission(child.id)}
+                                  disabled={childDisabled}
+                                  style={{ width: 16, height: 16, accentColor: P.purpleL, marginTop: 2 }}
+                                />
+                                <div>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: childChecked ? P.purple : P.ink }}>{child.label}</div>
+                                  <div style={{ fontSize: 11, color: P.muted, marginTop: 1, lineHeight: 1.35 }}>{child.desc}</div>
+                                </div>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
                   )
                 })}
               </div>

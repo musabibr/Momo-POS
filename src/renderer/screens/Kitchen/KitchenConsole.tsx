@@ -13,8 +13,9 @@ type KitchenTab = 'tickets' | 'stock' | 'production' | 'transfers' | 'damage'
 
 /**
  * KitchenConsole — premium kitchen hub with live stats header.
+ * `onLogout` is provided when shown fullscreen (kitchen-only users have no sidebar).
  */
-export function KitchenConsole() {
+export function KitchenConsole({ onLogout }: { onLogout?: () => void } = {}) {
   const [self, setSelf] = useState<any>(null)
   const [tab, setTab] = useState<KitchenTab>('stock')
   const [stats, setStats] = useState({ totalItems: 0, lowItems: 0, premadeCount: 0, todayTickets: 0 })
@@ -84,6 +85,16 @@ export function KitchenConsole() {
             <div style={{ fontSize: 11, color: P.muted, fontWeight: 500 }}>{self?.name || '—'}</div>
           </div>
         </div>
+        {onLogout && (
+          <button onClick={onLogout} title="تسجيل الخروج" style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: `${P.rose}10`, border: `1px solid ${P.roseL}60`, borderRadius: 10,
+            padding: '8px 14px', cursor: 'pointer', color: P.rose, fontFamily: 'Cairo, sans-serif',
+            fontSize: 13, fontWeight: 700
+          }}>
+            <Icon name="lock" size={14} color={P.rose} /> خروج
+          </button>
+        )}
       </div>
 
       {/* ── Live Stats Strip ── */}
